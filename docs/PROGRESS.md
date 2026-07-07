@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/health-sync` (M7), prête à merger
-- Dernier milestone terminé : **7 — Health sync** (vert : tsc + lint + 75 tests + expo-doctor 20/20)
-- Prochain milestone : 8 — IA texte (proxy OpenRouter)
+- Branche active : `feat/ai-text` (M8), prête à merger
+- Dernier milestone terminé : **8 — IA texte (proxy)** (vert : app 75 tests + serveur 16 tests, tsc/lint OK)
+- Prochain milestone : 9 — IA vision (Gemini→DeepSeek)
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -25,8 +25,10 @@
 
 - [x] M7 health sync : couche NEUTRE `HealthProvider` (extensible HealthKit sans réécriture), provider Health Connect (Android, `getSdkStatus`/`initialize`/`requestPermission`/`aggregateRecord` pas + calories actives), nullProvider (autres OS), sélection par OS, hook `useHealthData`, carte Activité du dashboard live + « Connecter Health Connect ». **75 tests** (sélection provider + null).
 
+- [x] M8 IA texte : proxy Hono (`server/`) — clé OpenRouter **server-only**, garde flag+auth PB+rate-limit, endpoints parse-food/estimate/recipe/meal-plan(+day)/summary/shopping-list/substitutions, sorties **JSON validées zod** (retry sur invalide), cache TTL, prompts versionnés (conception responsable). Client app `aiPost` (jamais OpenRouter en direct) + log NL `/ai-log`. Serveur lancé via **tsx** (pas d'étape build). **16 tests serveur** (rate-limit, cache, extractJson/chatJSON, schémas) + 75 app.
+
 ## En cours / prochaines étapes
-- [ ] Milestone 8 : proxy IA serveur (clé OpenRouter server-only), endpoints texte, sorties JSON zod, cache + rate-limit.
+- [ ] Milestone 9 : pipeline vision Gemini→DeepSeek (assiette avec questions, OCR étiquette, scan machine→equipment).
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -37,6 +39,7 @@
 - [x] 5 Poids / mensurations + graphe
 - [x] 6 Workouts + salles
 - [x] 7 Health sync (Health Connect)
+- [x] 8 IA texte (proxy OpenRouter)
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
