@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/ai-vision` (M9), prête à merger
-- Dernier milestone terminé : **9 — IA vision** (vert : app 75 tests + serveur 20 tests + expo-doctor 20/20)
-- Prochain milestone : 10 — Coach IA agentique
+- Branche active : `feat/ai-coach` (M10), revue sécurité en cours avant merge
+- Dernier milestone terminé : **10 — Coach agentique** (vert : app 75 tests + serveur 28 tests)
+- Prochain milestone : 11 — Dashboard + polish
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -29,8 +29,10 @@
 
 - [x] M9 IA vision : `chatVisionJSON` (image → modèle vision, jamais au texte direct), endpoints `/vision/plate` (items + questions de confirmation), `/vision/label` (OCR étiquette), `/vision/machine` (pipeline perception→DeepSeek→fiche equipment). App : `captureImage` (expo-image-picker), hooks vision, câblage **étiquette→saisie manuelle** (préremplissage) et **machine→equipment** (dans /workout-new). **20 tests serveur**.
 
+- [x] M10 coach agentique : registre d'outils (lecture + action) avec args zod, `runCoach` (boucle tool-calling bornée, reasoning passthrough), lecture owner-scoped, **action = proposition** ; `applyAction` exécute après validation avec `user` = utilisateur vérifié (jamais celui du modèle). Écran Coach (chat + carte de confirmation → apply). **28 tests serveur** (validation, owner-scoping, proposition≠exécution).
+
 ## En cours / prochaines étapes
-- [ ] Milestone 10 : coach agentique (function calling, outils lecture+action owner-scoped serveur, propose→confirme→applique).
+- [ ] Milestone 11 : agrégation dashboard, dark mode Apple, empty states, offline UX, écran À propos (ODbL).
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -43,6 +45,7 @@
 - [x] 7 Health sync (Health Connect)
 - [x] 8 IA texte (proxy OpenRouter)
 - [x] 9 IA vision (Gemini→DeepSeek)
+- [x] 10 Coach IA agentique
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -58,6 +61,7 @@
 - 2026-07-07 : versions vérifiées npm — Expo 57.0.4, RN 0.86.0, React 19.2.3, drizzle 0.45.2, zod 4, pocketbase-sdk 0.27.
 - 2026-07-07 : **PocketBase = 0.39.5**, construit depuis le binaire officiel GitHub (multi-arch). L'image `ghcr.io/pocketbase/pocketbase` du brief **n'existe pas** (vérifié) → Dockerfile maison.
 - 2026-07-07 : enforcement par hooks Node (portables Windows) ; secret-scan intégré (gitleaks en complément, voir À FAIRE).
+- 2026-07-07 : **revue M10** (coach, sécurité) → verdict ROBUSTE (owner-scoping étanche : `user` toujours = utilisateur vérifié + backstop règle PB ; propose→confirme→applique respecté ; lecture ignore les args du modèle). Corrigés (LOW) : validation du format date (`add_weight_entry`), bornage de l'historique coach (30 msgs / 20k car.). Reportés (LOW/INFO, acceptables pour 2-5 users) : nonce serveur liant `apply` à une proposition (voir « À FAIRE »), qualité des définitions d'outils exposées au modèle.
 - 2026-07-07 : **revue M2** (sync + règles PB, adversariale) → corrigés : curseur `>=` inclusif (écritures au même ms plus perdues), curseur ne dépasse pas un record rejeté par sanité (re-tirable), dead-letter journalisé (aucune écriture offline perdue), coercion `clientUpdatedAt` non écrasée par la valeur brute PB (LWW correct), `stableStringify` récursif (plus de faux conflit sur objets imbriqués), where composite PK dans manager, règles PB parent-ownership (equipment/meal_items/food_entries/workouts/exercises/sets) + durcissement `users`. 44 tests.
 - 2026-07-07 : **revue M1** (code-reviewer + security-reviewer avant merge) → corrigés : session expirée traitée comme connectée (`isAuthenticated` dérivé de `pb.authStore.isValid`), annulation OIDC bloquant l'UI (race sur `openAuthSessionAsync` cancel/dismiss), flash de contenu protégé (rendu gaté sur `ready`), fragmentation secure-store en OCTETS UTF-8 (pas UTF-16), balayage défensif au logout, validation de `AUTH_MODE`. Sous-agents custom `.claude/agents/` non résolus comme `subagent_type` en session → revues lancées via `general-purpose` avec brief embarqué.
 - 2026-07-07 : **contournements de versions** (pièges vérifiés) — (a) `app/.npmrc` `legacy-peer-deps=true` (arbre de peers Expo strict) ; (b) **eslint épinglé à 9.x** (eslint 10 casse `eslint-plugin-react` : `getFilename is not a function`) ; (c) **jest épinglé à 29** (jest-expo 57 est sur les internals jest 29 ; jest 30 → `clearMocksOnScope is not a function`) ; (d) deps ajoutées explicitement : `babel-preset-expo`, `@react-native/jest-preset@0.86.0` ; (e) tests importent les globals depuis `@jest/globals` (tsc strict sans `types` élargi) ; (f) `newArchEnabled` retiré d'`app.json` (nouvelle arch = défaut SDK 57).

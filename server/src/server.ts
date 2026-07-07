@@ -21,6 +21,8 @@ import {
   substitutionsSchema,
   summarySchema,
 } from './schemas.ts';
+import { runCoach } from './coach/engine.ts';
+import { applyAction } from './coach/execute.ts';
 import { chatVisionJSON } from './vision.ts';
 
 const limiter = new RateLimiter(config.rateLimitPerMin);
@@ -136,6 +138,28 @@ export function createApp() {
     } catch (error) {
       return c.json({ error: error instanceof Error ? error.message : 'Erreur vision' }, 502);
     }
+  });
+
+  // --- Coach agentique : lecture exécutée, action = proposition (confirme→applique) ---
+  app.post('/api/ai/coach', async (c) => {
+    const ctx = { userId: c.get('userId'), token: c.req.header('Authorization') ?? '' };
+    const body = (await c.req.json().catch(() => ({}))) as {
+      messages?: { role: 'user' | 'assistant'; content: string }[];
+    };
+    // Borne l'historique (coût/DoS d'inférence) : 30 derniers messages, 20k caractères cumulés.
+    const messages = (body.messages ?? []).slice(-30);
+    if (messages.reduce((n, m) => n + (m.content?.length ?? 0), 0) > 20_000) {
+      return c.json({ error: 'Historique trop volumineux.' }, 413);
+    }
+    const result = await runCoach(messages, ctx, Date.now());
+    return c.json(result);
+  });
+
+  app.post('/api/ai/coach/apply', async (c) => {
+    const ctx = { userId: c.get('userId'), token: c.req.header('Authorization') ?? '' };
+    const body = (await c.req.json().catch(() => ({}))) as { tool?: string; args?: unknown };
+    const result = await applyAction(body.tool ?? '', body.args, ctx, Date.now());
+    return c.json(result, result.ok ? 200 : 400);
   });
 
   return app;
