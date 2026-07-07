@@ -36,7 +36,8 @@
         {
           "cameraPermission": "mangetout utilise la caméra pour scanner les codes-barres des produits."
         }
-      ]
+      ],
+      "react-native-health-connect"
     ],
     "experiments": {
       "typedRoutes": true
