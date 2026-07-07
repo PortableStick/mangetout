@@ -20,7 +20,7 @@ export const env = {
   /** URL du proxy IA (sidecar). */
   aiUrl: str(process.env.EXPO_PUBLIC_AI_URL, 'https://ai.example.com'),
   /** Mode d'auth : oidc (Authelia) ou password (fallback natif PocketBase). */
-  authMode: str(process.env.EXPO_PUBLIC_AUTH_MODE, 'oidc') as AuthMode,
+  authMode: (process.env.EXPO_PUBLIC_AUTH_MODE === 'password' ? 'password' : 'oidc') as AuthMode,
   /** Nom du provider OIDC générique configuré côté PocketBase (à valider au setup). */
   oidcProvider: str(process.env.EXPO_PUBLIC_OIDC_PROVIDER, 'oidc'),
   /** Feature flag IA global. */
