@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/data-layer` (M2), en cours de revue avant merge
-- Dernier milestone terminé : **2 — Data layer + sync** (vert : tsc + lint + 41 tests)
-- Prochain milestone : 3 — Food + barcode (OpenFoodFacts)
+- Branche active : `feat/food-barcode` (M3), prête à merger
+- Dernier milestone terminé : **3 — Food + barcode** (vert : tsc + lint + 57 tests + expo-doctor 20/20)
+- Prochain milestone : 4 — Saisie manuelle + recettes
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -15,13 +15,16 @@
 
 - [x] M2 data layer + sync : cache SQLite générique (drizzle `sync_records`/`sync_queue`/`conflicts`/`sync_cursors`), moteur de sync pur & testé (`reconcile` LWW, `sanity` zod+bornes, `OfflineQueue` coalescée, `SyncEngine` pull+push avec journal — **jamais d'écrasement silencieux**), `SyncManager` (persistance file+curseurs), adaptateurs local (drizzle) et remote (PocketBase). Migration PB : 12 collections owner-only + méta de sync. **41 tests** (resync device vierge, hors-ligne, coupure réseau en écriture, conflit concurrent, conflit à horodatage égal, garde-fous sanité).
 
+- [x] M3 food + barcode : client OpenFoodFacts (`openFoodFacts.ts` — User-Agent custom, `fields=`, conversion kJ→kcal, gestion inconnu/incomplet, zod), calcul nutrition pur (`nutrition.ts` — macros au prorata, sommes, Atwater), scan `CameraView` (formats ean13/ean8/upc_a/upc_e), écran journal (repas + totaux + suppression), repository + hooks React Query. **57 tests** (nutrition + mapping/lookup OFF).
+
 ## En cours / prochaines étapes
-- [ ] Milestone 3 : lookup OpenFoodFacts (User-Agent, `fields=`, cache local), scan CameraView, ajout journal, totaux kcal/macros.
+- [ ] Milestone 4 : aliments/recettes custom, composition de repas réutilisables.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
 - [x] 1 Auth OIDC
 - [x] 2 Data layer + sync (CRITIQUE)
+- [x] 3 Food + barcode (OpenFoodFacts)
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -61,6 +64,9 @@
 ### Auth / PocketBase (à décider au déploiement)
 - [ ] **`users.createRule`** : la migration durcit list/view/update/delete de `users` en owner-only mais laisse `createRule` inchangé. Décider selon `AUTH_MODE` : OIDC (auto-provisioning à la 1re connexion) vs password (création par l'admin, désactiver le signup public). Pour 2-5 users : privilégier la création admin.
 - [ ] Vérifier après `docker compose up` que la migration `1720000000_init_collections.js` s'est appliquée (12 collections + règles parent) et tester une écriture cross-user (doit être refusée).
+
+### Données externes
+- [ ] **User-Agent OpenFoodFacts** : remplacer le contact placeholder dans `app/src/features/food/openFoodFacts.ts` (`OFF_USER_AGENT`) par un email/URL réel (règle OFF). Ajouter la mention ODbL « Data from Open Food Facts / ODbL » dans l'écran À propos (M11).
 
 ### Outillage recommandé
 - [ ] Installer **gitleaks** en pre-commit (complète le secret-scan intégré). Le hook `gate.mjs` a un scanner de secours mais gitleaks couvre plus large.
