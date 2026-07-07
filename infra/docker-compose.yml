@@ -1,0 +1,79 @@
+# mangetout — homelab (source de vérité autoritaire).
+# PocketBase (données+auth+fichiers) + proxy IA (détient la clé OpenRouter), derrière Traefik existant.
+# Secrets lus depuis infra/.env (gitignoré) — copier depuis ../.env.example. JAMAIS committé.
+#
+# Prérequis : un réseau Traefik externe déjà en place sur le homelab (nom via TRAEFIK_NETWORK).
+# Déploiement : voir infra/README.md.
+
+services:
+  pocketbase:
+    build:
+      context: ./pocketbase
+      args:
+        PB_VERSION: ${POCKETBASE_VERSION:-0.39.5}
+    image: mangetout/pocketbase:${POCKETBASE_VERSION:-0.39.5}
+    container_name: mangetout-pocketbase
+    restart: unless-stopped
+    volumes:
+      - pb_data:/pb/pb_data
+      - ./pocketbase/pb_migrations:/pb/pb_migrations:ro
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.mangetout-pb.rule=Host(`${PB_HOST:-pb.example.com}`)"
+      - "traefik.http.routers.mangetout-pb.entrypoints=websecure"
+      - "traefik.http.routers.mangetout-pb.tls=true"
+      - "traefik.http.routers.mangetout-pb.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.mangetout-pb.middlewares=mangetout-sec@docker"
+      - "traefik.http.services.mangetout-pb.loadbalancer.server.port=8090"
+      # En-têtes de sécurité (durcissement Traefik)
+      - "traefik.http.middlewares.mangetout-sec.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.mangetout-sec.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.mangetout-sec.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.mangetout-sec.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.mangetout-sec.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+  ai-proxy:
+    build:
+      context: ../server
+    image: mangetout/ai-proxy:latest
+    container_name: mangetout-ai-proxy
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=8787
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:?clé OpenRouter requise dans infra/.env}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      - AI_MODEL_TEXT=${AI_MODEL_TEXT:-deepseek/deepseek-v4-flash}
+      - AI_MODEL_TEXT_PRO=${AI_MODEL_TEXT_PRO:-deepseek/deepseek-v4-pro}
+      - AI_MODEL_VISION=${AI_MODEL_VISION:-google/gemini-2.5-flash}
+      - PB_INTERNAL_URL=${PB_INTERNAL_URL:-http://pocketbase:8090}
+      - PB_SERVICE_TOKEN=${PB_SERVICE_TOKEN:-}
+      - AI_RATE_LIMIT_PER_MIN=${AI_RATE_LIMIT_PER_MIN:-20}
+    depends_on:
+      - pocketbase
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.mangetout-ai.rule=Host(`${AI_HOST:-ai.example.com}`)"
+      - "traefik.http.routers.mangetout-ai.entrypoints=websecure"
+      - "traefik.http.routers.mangetout-ai.tls=true"
+      - "traefik.http.routers.mangetout-ai.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.mangetout-ai.loadbalancer.server.port=8787"
+
+volumes:
+  pb_data:
+    # Volume persistant. Intégré à la chaîne restic (voir restic-backup.sh).
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
+  internal:
+    driver: bridge

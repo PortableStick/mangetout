@@ -13,7 +13,7 @@ App mobile **Android** (v1) de suivi fitness & calorique, **offline-first**, bac
 | Routing | expo-router (file-based) | — |
 | DB locale (cache offline) | expo-sqlite + drizzle-orm | drizzle **0.45.2** |
 | État serveur/cache | TanStack Query | (pas de Redux) |
-| Backend (source de vérité) | PocketBase (Docker, Traefik) | **0.30.0** (pré-1.0, épinglé) |
+| Backend (source de vérité) | PocketBase (Docker, Traefik) | **0.39.5** (pré-1.0, épinglé ; build depuis binaire officiel) |
 | Auth | Authelia OIDC (authz_code+PKCE) via SDK PocketBase | flag `AUTH_MODE` (oidc\|password) |
 | Scan | expo-camera `CameraView` (`ean13/ean8/upc_a/upc_e`) | — |
 | Nutrition externe | OpenFoodFacts (User-Agent custom, `fields=`) | ODbL — attribution obligatoire |
@@ -41,6 +41,12 @@ mangetout/
 - **Branches** : une par milestone (`chore/setup`, `feat/auth-oidc`, `feat/data-layer`, `feat/food-barcode`, `feat/manual-entry`, `feat/weight`, `feat/workouts-gyms`, `feat/health-sync`, `feat/ai-text`, `feat/ai-vision`, `feat/ai-coach`, `feat/dashboard`, `chore/polish`). Merge sur `main` seulement si **vert**.
 - **Nommage fichiers** : composants `PascalCase.tsx`, hooks `useXxx.ts`, modules `kebab` ou `camel` cohérents par dossier.
 - **Secrets** : `.env` gitignoré ; `EXPO_PUBLIC_*` = valeurs publiques embarquées (jamais secrètes) ; clé IA **server only**.
+
+## Pièges de versions (ne pas régresser)
+- `app/.npmrc` : `legacy-peer-deps=true` (arbre de peers Expo). Garder pour les installs.
+- **eslint 9.x** (pas 10 : casse eslint-plugin-react). **jest 29** (pas 30 : jest-expo 57 = internals jest 29).
+- Deps explicites requises : `babel-preset-expo`, `@react-native/jest-preset@0.86.0`. Tests : importer les globals depuis `@jest/globals`.
+- `app.json` : pas de `newArchEnabled` (nouvelle arch = défaut SDK 57).
 
 ## Commandes utiles
 - App : `cd app && npm run typecheck` · `npm run lint` · `npm test` · `npx expo start --dev-client`
