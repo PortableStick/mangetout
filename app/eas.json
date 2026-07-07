@@ -17,8 +17,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_PB_URL": "https://pb.example.com",
-        "EXPO_PUBLIC_AI_URL": "https://ai.example.com",
+        "EXPO_PUBLIC_PB_URL": "https://pb.vindiesel.vip",
+        "EXPO_PUBLIC_AI_URL": "https://ai.vindiesel.vip",
         "EXPO_PUBLIC_AUTH_MODE": "oidc",
         "EXPO_PUBLIC_OIDC_PROVIDER": "oidc",
         "EXPO_PUBLIC_AI_ENABLED": "true"
@@ -30,8 +30,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_PB_URL": "https://pb.example.com",
-        "EXPO_PUBLIC_AI_URL": "https://ai.example.com",
+        "EXPO_PUBLIC_PB_URL": "https://pb.vindiesel.vip",
+        "EXPO_PUBLIC_AI_URL": "https://ai.vindiesel.vip",
         "EXPO_PUBLIC_AUTH_MODE": "oidc",
         "EXPO_PUBLIC_OIDC_PROVIDER": "oidc",
         "EXPO_PUBLIC_AI_ENABLED": "true"

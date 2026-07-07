@@ -24,7 +24,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
-      - "traefik.http.routers.mangetout-pb.rule=Host(`${PB_HOST:-pb.example.com}`)"
+      - "traefik.http.routers.mangetout-pb.rule=Host(`${PB_HOST:-pb.vindiesel.vip}`)"
       - "traefik.http.routers.mangetout-pb.entrypoints=websecure"
       - "traefik.http.routers.mangetout-pb.tls=true"
       - "traefik.http.routers.mangetout-pb.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
@@ -62,7 +62,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
-      - "traefik.http.routers.mangetout-ai.rule=Host(`${AI_HOST:-ai.example.com}`)"
+      - "traefik.http.routers.mangetout-ai.rule=Host(`${AI_HOST:-ai.vindiesel.vip}`)"
       - "traefik.http.routers.mangetout-ai.entrypoints=websecure"
       - "traefik.http.routers.mangetout-ai.tls=true"
       - "traefik.http.routers.mangetout-ai.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
