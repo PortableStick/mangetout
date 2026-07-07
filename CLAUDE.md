@@ -71,7 +71,8 @@ Toutes owner-scoped (`user` = relation vers `users`), règles d'accès `@request
 - `meal_plans` — plan IA généré (semaine, json, éditable, régénérable par jour).
 
 ## Architecture & décisions clés
-- **Homelab (PocketBase) = autoritaire.** SQLite local = cache offline. Sync last-write-wins sur `client_updated_at`, file d'attente hors-ligne, réconciliation avec garde-fous (validation schéma + bornes sanité + journal de conflits, **jamais d'écrasement silencieux**). Rien en local-only.
+- **Homelab (PocketBase) = autoritaire.** SQLite local = cache offline. Sync last-write-wins sur `clientUpdatedAt`, file d'attente hors-ligne, réconciliation avec garde-fous (validation schéma + bornes sanité + journal de conflits, **jamais d'écrasement silencieux**). Rien en local-only.
+  - Cache local **générique** (`src/db/schema.ts` : `sync_records` = collection+id+payload JSON, + `sync_queue`/`conflicts`/`sync_cursors`) — pas de table typée par entité ; formes métier en TS/zod au niveau des écrans. Moteur pur & DI dans `src/sync/` (`reconcile`, `sanity`, `queue`, `engine`, `manager`), adaptateurs `src/db/localStore.ts` (drizzle) + `remoteStore.ts` (PocketBase). Collections PB : `infra/pocketbase/pb_migrations/`.
 - **IA** : app → proxy `server/` (détient la clé) → OpenRouter. Pipeline vision : image → Gemini (perception, sortie structurée) → DeepSeek (raisonnement). Sorties **JSON strict validées zod**. Cache + rate-limit par user.
 - **Coach agentique** : function calling DeepSeek, outils lecture + action **owner-scoped exécutés serveur**, **propose→confirme→applique** (jamais de modif silencieuse).
 - **Couche santé** : `useHealthData` neutre → Health Connect (Android). iOS/HealthKit = future implémentation, pas de réécriture.

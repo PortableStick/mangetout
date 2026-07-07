@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/auth-oidc` (M1), en cours de revue avant merge
-- Dernier milestone terminé : **1 — Auth OIDC** (vert : tsc + lint + 12 tests + expo-doctor 20/20)
-- Prochain milestone : 2 — Data layer + sync (CRITIQUE)
+- Branche active : `feat/data-layer` (M2), en cours de revue avant merge
+- Dernier milestone terminé : **2 — Data layer + sync** (vert : tsc + lint + 41 tests)
+- Prochain milestone : 3 — Food + barcode (OpenFoodFacts)
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -13,13 +13,15 @@
 - [x] EAS (`app/eas.json`) : profils development (dev client APK) / preview (APK) / production (AAB), Android only.
 - [x] M1 auth : client PocketBase + `AsyncAuthStore` sur **expo-secure-store fragmenté** (payload > 2 Ko), `signInWithOidc` (`authWithOAuth2` + `expo-web-browser`, provider via `AUTH_MODE`/`OIDC_PROVIDER`), fallback `signInWithPassword`, `AuthProvider`/`useAuth`, garde de route (redirection login), écran login Apple + déconnexion dans Réglages. Tests : fragmentation secure-store (round-trip/shrink/clear) + mapping/erreurs auth (12 verts).
 
+- [x] M2 data layer + sync : cache SQLite générique (drizzle `sync_records`/`sync_queue`/`conflicts`/`sync_cursors`), moteur de sync pur & testé (`reconcile` LWW, `sanity` zod+bornes, `OfflineQueue` coalescée, `SyncEngine` pull+push avec journal — **jamais d'écrasement silencieux**), `SyncManager` (persistance file+curseurs), adaptateurs local (drizzle) et remote (PocketBase). Migration PB : 12 collections owner-only + méta de sync. **41 tests** (resync device vierge, hors-ligne, coupure réseau en écriture, conflit concurrent, conflit à horodatage égal, garde-fous sanité).
+
 ## En cours / prochaines étapes
-- [ ] Milestone 2 : schéma drizzle local + collections PocketBase + couche sync (last-write-wins, file offline, réconciliation avec garde-fous), tests resync device vierge.
+- [ ] Milestone 3 : lookup OpenFoodFacts (User-Agent, `fields=`, cache local), scan CameraView, ajout journal, totaux kcal/macros.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
 - [x] 1 Auth OIDC
-- [ ] 2 Data layer + sync (CRITIQUE)
+- [x] 2 Data layer + sync (CRITIQUE)
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -35,6 +37,7 @@
 - 2026-07-07 : versions vérifiées npm — Expo 57.0.4, RN 0.86.0, React 19.2.3, drizzle 0.45.2, zod 4, pocketbase-sdk 0.27.
 - 2026-07-07 : **PocketBase = 0.39.5**, construit depuis le binaire officiel GitHub (multi-arch). L'image `ghcr.io/pocketbase/pocketbase` du brief **n'existe pas** (vérifié) → Dockerfile maison.
 - 2026-07-07 : enforcement par hooks Node (portables Windows) ; secret-scan intégré (gitleaks en complément, voir À FAIRE).
+- 2026-07-07 : **revue M2** (sync + règles PB, adversariale) → corrigés : curseur `>=` inclusif (écritures au même ms plus perdues), curseur ne dépasse pas un record rejeté par sanité (re-tirable), dead-letter journalisé (aucune écriture offline perdue), coercion `clientUpdatedAt` non écrasée par la valeur brute PB (LWW correct), `stableStringify` récursif (plus de faux conflit sur objets imbriqués), where composite PK dans manager, règles PB parent-ownership (equipment/meal_items/food_entries/workouts/exercises/sets) + durcissement `users`. 44 tests.
 - 2026-07-07 : **revue M1** (code-reviewer + security-reviewer avant merge) → corrigés : session expirée traitée comme connectée (`isAuthenticated` dérivé de `pb.authStore.isValid`), annulation OIDC bloquant l'UI (race sur `openAuthSessionAsync` cancel/dismiss), flash de contenu protégé (rendu gaté sur `ready`), fragmentation secure-store en OCTETS UTF-8 (pas UTF-16), balayage défensif au logout, validation de `AUTH_MODE`. Sous-agents custom `.claude/agents/` non résolus comme `subagent_type` en session → revues lancées via `general-purpose` avec brief embarqué.
 - 2026-07-07 : **contournements de versions** (pièges vérifiés) — (a) `app/.npmrc` `legacy-peer-deps=true` (arbre de peers Expo strict) ; (b) **eslint épinglé à 9.x** (eslint 10 casse `eslint-plugin-react` : `getFilename is not a function`) ; (c) **jest épinglé à 29** (jest-expo 57 est sur les internals jest 29 ; jest 30 → `clearMocksOnScope is not a function`) ; (d) deps ajoutées explicitement : `babel-preset-expo`, `@react-native/jest-preset@0.86.0` ; (e) tests importent les globals depuis `@jest/globals` (tsc strict sans `types` élargi) ; (f) `newArchEnabled` retiré d'`app.json` (nouvelle arch = défaut SDK 57).
 
@@ -54,6 +57,10 @@
 
 ### Déploiement homelab
 - [ ] Mettre PocketBase 0.30.0 + Traefik en service, `pb_data` sur volume persistant, intégrer à la chaîne restic.
+
+### Auth / PocketBase (à décider au déploiement)
+- [ ] **`users.createRule`** : la migration durcit list/view/update/delete de `users` en owner-only mais laisse `createRule` inchangé. Décider selon `AUTH_MODE` : OIDC (auto-provisioning à la 1re connexion) vs password (création par l'admin, désactiver le signup public). Pour 2-5 users : privilégier la création admin.
+- [ ] Vérifier après `docker compose up` que la migration `1720000000_init_collections.js` s'est appliquée (12 collections + règles parent) et tester une écriture cross-user (doit être refusée).
 
 ### Outillage recommandé
 - [ ] Installer **gitleaks** en pre-commit (complète le secret-scan intégré). Le hook `gate.mjs` a un scanner de secours mais gitleaks couvre plus large.
