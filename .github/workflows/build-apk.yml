@@ -1,0 +1,53 @@
+name: build-apk
+
+# Build d'un APK Android (profil preview) via EAS, téléchargeable en artefact.
+# Prérequis (une fois) :
+#   1) compte Expo + `eas init` dans app/ pour lier un projectId (non secret, à committer)
+#   2) secret repo GitHub `EXPO_TOKEN` (Expo → Access Tokens)
+# ⚠️ EAS Build gratuit = quota mensuel + file d'attente. Sinon : build local (voir docs/DEPLOY.md).
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK (cloud, wait)
+        run: eas build --platform android --profile preview --non-interactive --wait
+
+      - name: Récupère l'URL de l'artefact
+        id: url
+        run: |
+          URL=$(eas build:list --platform android --limit 1 --json --non-interactive \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d)[0].artifacts.applicationArchiveUrl))")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Télécharge l'APK
+        run: curl -L -o mangetout-preview.apk "${{ steps.url.outputs.url }}"
+
+      - name: Publie l'APK en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mangetout-apk
+          path: app/mangetout-preview.apk

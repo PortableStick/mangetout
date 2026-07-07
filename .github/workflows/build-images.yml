@@ -1,0 +1,60 @@
+name: build-images
+
+# Build + push des images Docker (PocketBase + proxy IA) vers ghcr.io.
+# Utilise le GITHUB_TOKEN intégré — aucun secret à configurer.
+# Images publiques amd64 : ghcr.io/<owner>/mangetout-pocketbase et …/mangetout-ai-proxy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/pocketbase/**'
+      - 'server/**'
+      - '.github/workflows/build-images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: mangetout-pocketbase
+            context: ./infra/pocketbase
+          - image: mangetout-ai-proxy
+            context: ./server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+            type=ref,event=tag
+
+      - name: Build & push (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

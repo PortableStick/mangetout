@@ -92,6 +92,13 @@
 ### Données externes
 - [ ] **User-Agent OpenFoodFacts** : remplacer le contact placeholder dans `app/src/features/food/openFoodFacts.ts` (`OFF_USER_AGENT`) par un email/URL réel (règle OFF). Ajouter la mention ODbL « Data from Open Food Facts / ODbL » dans l'écran À propos (M11).
 
+### Déploiement (outillage prêt — voir docs/DEPLOY.md)
+- [x] CI `.github/workflows/build-images.yml` : push ghcr **public amd64** (PocketBase + ai-proxy), via `GITHUB_TOKEN`.
+- [x] CI `.github/workflows/build-apk.yml` : APK preview via EAS → artefact (nécessite secret `EXPO_TOKEN` + `eas init`).
+- [x] `docs/DEPLOY.md` (checklist + tableau des valeurs) et `docs/DEPLOY_PROMPT.md` (prompt agent homelab, OIDC).
+- [x] compose pointe sur les images ghcr (`docker compose pull`), build local en secours ; `eas.json` porte les `EXPO_PUBLIC_*` (à remplacer par tes domaines).
+- [ ] **Toi** : activer Actions + rendre les packages publics ; remplir `infra/.env` ; enregistrer le client OIDC Authelia ; `eas init` + secret `EXPO_TOKEN` ; lancer les workflows.
+
 ### Outillage recommandé
 - [ ] Installer **gitleaks** en pre-commit (complète le secret-scan intégré). Le hook `gate.mjs` a un scanner de secours mais gitleaks couvre plus large.
 

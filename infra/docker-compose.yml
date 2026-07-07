@@ -7,11 +7,12 @@
 
 services:
   pocketbase:
+    # Image publiée sur ghcr (docker compose pull). `build` reste dispo en secours local.
+    image: ghcr.io/portablestick/mangetout-pocketbase:${PB_IMAGE_TAG:-latest}
     build:
       context: ./pocketbase
       args:
         PB_VERSION: ${POCKETBASE_VERSION:-0.39.5}
-    image: mangetout/pocketbase:${POCKETBASE_VERSION:-0.39.5}
     container_name: mangetout-pocketbase
     restart: unless-stopped
     volumes:
@@ -37,9 +38,9 @@ services:
       - "traefik.http.middlewares.mangetout-sec.headers.referrerPolicy=strict-origin-when-cross-origin"
 
   ai-proxy:
+    image: ghcr.io/portablestick/mangetout-ai-proxy:${AI_IMAGE_TAG:-latest}
     build:
       context: ../server
-    image: mangetout/ai-proxy:latest
     container_name: mangetout-ai-proxy
     restart: unless-stopped
     environment:
