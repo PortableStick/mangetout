@@ -23,4 +23,11 @@ module.exports = [
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
+  {
+    // Tests : jest.mock() doit précéder l'import du module testé (hoisting jest).
+    files: ['**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      'import/first': 'off',
+    },
+  },
 ];
