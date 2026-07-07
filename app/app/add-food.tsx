@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { env } from '@/config/env';
+import { captureImage, useLabelVision } from '@/features/ai/vision';
 import { MealPicker } from '@/features/food/MealPicker';
 import { makeManualFood } from '@/features/food/repository';
 import { type MealType } from '@/features/food/types';
@@ -24,8 +26,20 @@ export default function AddFoodScreen() {
   const [fat, setFat] = useState('');
   const [quantity, setQuantity] = useState('100');
   const [meal, setMeal] = useState<MealType>('lunch');
+  const label = useLabelVision();
 
   const canSave = name.trim().length > 0 && numOf(quantity) > 0;
+
+  async function scanLabel() {
+    const image = await captureImage();
+    if (!image) return;
+    const res = await label.mutateAsync(image);
+    if (res.name) setName(res.name);
+    setKcal(String(res.per_100g.kcal));
+    setProtein(String(res.per_100g.protein_g));
+    setCarbs(String(res.per_100g.carbs_g));
+    setFat(String(res.per_100g.fat_g));
+  }
 
   function save() {
     const food = makeManualFood({
@@ -47,6 +61,15 @@ export default function AddFoodScreen() {
       <Text variant="footnote" color="textTertiary">
         Valeurs nutritionnelles pour 100 g.
       </Text>
+
+      {env.aiEnabled ? (
+        <Button
+          label={label.isPending ? 'Lecture de l’étiquette…' : '📷 Scanner l’étiquette'}
+          variant="secondary"
+          loading={label.isPending}
+          onPress={scanLabel}
+        />
+      ) : null}
 
       <Field label="Nom" value={name} onChangeText={setName} placeholder="Ex. Fromage blanc" />
       <View style={{ flexDirection: 'row', gap: 12 }}>

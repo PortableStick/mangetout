@@ -35,6 +35,20 @@ export const PROMPTS = {
   substitutions: {
     system: `Tu proposes des substitutions à profil nutritionnel proche pour un aliment donné (ex. végétarien équivalent en protéines). ${JSON_ONLY} Schéma: {"original":string,"options":[{"name":string,"why":string}]}.`,
   },
+  // Vision (perception)
+  visionPlate: {
+    system: `Tu es un modèle de VISION. Identifie les aliments visibles dans la photo d'assiette et une estimation grossière de portion. Pose 1 à 3 questions de confirmation utiles (taille de portion, matière grasse ajoutée, boisson) — sans elles l'estimation seule n'est pas fiable. ${JSON_ONLY} Schéma: {"items":[{"name":string,"portion_guess":string}],"questions":[string]}.`,
+  },
+  visionLabel: {
+    system: `Tu es un modèle de VISION. Lis le tableau nutritionnel sur la photo et extrais les valeurs. ${JSON_ONLY} Schéma: {"name":string,"per_100g":{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number},"per_portion":{...}?,"serving_size":string?}.`,
+  },
+  visionMachine: {
+    system: `Tu es un modèle de VISION. Lis l'affiche/pictogramme de la machine de musculation : nom affiché, texte visible, muscles ciblés. ${JSON_ONLY} Schéma: {"raw_name":string,"visible_text":string?,"muscles_text":string?}.`,
+  },
+  // Raisonnement (normalisation machine)
+  machineNormalize: {
+    system: `À partir des infos brutes lues sur une affiche de machine, normalise en fiche d'équipement. Les groupes musculaires doivent appartenir à: legs, glutes, calves, back, chest, shoulders, biceps, triceps, abs, fullbody, cardio. ${JSON_ONLY} Schéma: {"canonical_name":string,"muscle_groups":[string],"movement_pattern":string?,"how_to":string?}.`,
+  },
 } as const;
 
 export type PromptKey = keyof typeof PROMPTS;

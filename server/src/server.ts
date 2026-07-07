@@ -9,14 +9,19 @@ import { PROMPTS, type PromptKey } from './prompts.ts';
 import { RateLimiter } from './rateLimit.ts';
 import {
   estimateSchema,
+  labelSchema,
+  machinePerceptionSchema,
+  machineSchema,
   mealPlanSchema,
   parseFoodSchema,
+  platePerceptionSchema,
   recipeSchema,
   shoppingListSchema,
   singleDaySchema,
   substitutionsSchema,
   summarySchema,
 } from './schemas.ts';
+import { chatVisionJSON } from './vision.ts';
 
 const limiter = new RateLimiter(config.rateLimitPerMin);
 const cache = new TtlCache<unknown>(1000 * 60 * 60); // 1 h
@@ -76,6 +81,62 @@ export function createApp() {
   textRoute('summary', 'summary', summarySchema);
   textRoute('shopping-list', 'shoppingList', shoppingListSchema, { cache: true });
   textRoute('substitutions', 'substitutions', substitutionsSchema, { cache: true });
+
+  // --- Vision : l'image passe par le modèle vision (perception), jamais le texte ---
+  app.post('/api/ai/vision/plate', async (c) => {
+    const { imageBase64 } = (await c.req.json().catch(() => ({}))) as { imageBase64?: string };
+    if (!imageBase64) return c.json({ error: 'image manquante' }, 400);
+    try {
+      const out = await chatVisionJSON({
+        model: config.openRouter.modelVision,
+        system: PROMPTS.visionPlate.system,
+        imageBase64,
+        schema: platePerceptionSchema,
+      });
+      return c.json(out);
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : 'Erreur vision' }, 502);
+    }
+  });
+
+  app.post('/api/ai/vision/label', async (c) => {
+    const { imageBase64 } = (await c.req.json().catch(() => ({}))) as { imageBase64?: string };
+    if (!imageBase64) return c.json({ error: 'image manquante' }, 400);
+    try {
+      const out = await chatVisionJSON({
+        model: config.openRouter.modelVision,
+        system: PROMPTS.visionLabel.system,
+        imageBase64,
+        schema: labelSchema,
+      });
+      return c.json(out);
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : 'Erreur vision' }, 502);
+    }
+  });
+
+  // Pipeline perception → raisonnement : Gemini lit l'affiche, DeepSeek normalise.
+  app.post('/api/ai/vision/machine', async (c) => {
+    const { imageBase64 } = (await c.req.json().catch(() => ({}))) as { imageBase64?: string };
+    if (!imageBase64) return c.json({ error: 'image manquante' }, 400);
+    try {
+      const perception = await chatVisionJSON({
+        model: config.openRouter.modelVision,
+        system: PROMPTS.visionMachine.system,
+        imageBase64,
+        schema: machinePerceptionSchema,
+      });
+      const normalized = await chatJSON({
+        model: config.openRouter.modelText,
+        system: PROMPTS.machineNormalize.system,
+        user: JSON.stringify(perception),
+        schema: machineSchema,
+      });
+      return c.json(normalized);
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : 'Erreur vision' }, 502);
+    }
+  });
 
   return app;
 }

@@ -8,10 +8,18 @@ import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { env } from '@/config/env';
+import { captureImage, useMachineVision } from '@/features/ai/vision';
 import { today } from '@/features/food/useFoodLog';
 import { generateWorkout } from '@/features/workouts/generator';
 import { MUSCLE_LABELS, type Equipment, type MuscleGroup } from '@/features/workouts/types';
-import { useCreateWorkout, useEquipment, useGyms } from '@/features/workouts/useWorkouts';
+import {
+  toMuscleGroups,
+  useAddEquipment,
+  useCreateWorkout,
+  useEquipment,
+  useGyms,
+} from '@/features/workouts/useWorkouts';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const numOf = (s: string) => Number.parseFloat(s.replace(',', '.')) || 0;
@@ -37,6 +45,21 @@ export default function WorkoutNewScreen() {
   const gymId = selectedGymId ?? gyms[0]?.id;
   const { data: equipment = [] } = useEquipment(gymId);
   const create = useCreateWorkout();
+  const addEquipment = useAddEquipment();
+  const machineScan = useMachineVision();
+
+  async function scanMachine() {
+    if (!gymId) return;
+    const image = await captureImage();
+    if (!image) return;
+    const res = await machineScan.mutateAsync(image);
+    await addEquipment.mutateAsync({
+      gymId,
+      name: res.canonical_name,
+      category: 'machine',
+      muscleGroups: toMuscleGroups(res.muscle_groups),
+    });
+  }
 
   const [targets, setTargets] = useState<MuscleGroup[]>([]);
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
@@ -139,6 +162,15 @@ export default function WorkoutNewScreen() {
           </Pressable>
         </Card>
       ))}
+
+      {env.aiEnabled && gymId ? (
+        <Button
+          label={machineScan.isPending || addEquipment.isPending ? 'Analyse de la machine…' : '📷 Scanner une machine'}
+          variant="secondary"
+          loading={machineScan.isPending || addEquipment.isPending}
+          onPress={scanMachine}
+        />
+      ) : null}
 
       {gymId && equipment.length > 0 ? (
         <Card>
