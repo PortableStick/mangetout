@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/ai-text` (M8), prête à merger
-- Dernier milestone terminé : **8 — IA texte (proxy)** (vert : app 75 tests + serveur 16 tests, tsc/lint OK)
-- Prochain milestone : 9 — IA vision (Gemini→DeepSeek)
+- Branche active : `feat/ai-vision` (M9), prête à merger
+- Dernier milestone terminé : **9 — IA vision** (vert : app 75 tests + serveur 20 tests + expo-doctor 20/20)
+- Prochain milestone : 10 — Coach IA agentique
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -27,8 +27,10 @@
 
 - [x] M8 IA texte : proxy Hono (`server/`) — clé OpenRouter **server-only**, garde flag+auth PB+rate-limit, endpoints parse-food/estimate/recipe/meal-plan(+day)/summary/shopping-list/substitutions, sorties **JSON validées zod** (retry sur invalide), cache TTL, prompts versionnés (conception responsable). Client app `aiPost` (jamais OpenRouter en direct) + log NL `/ai-log`. Serveur lancé via **tsx** (pas d'étape build). **16 tests serveur** (rate-limit, cache, extractJson/chatJSON, schémas) + 75 app.
 
+- [x] M9 IA vision : `chatVisionJSON` (image → modèle vision, jamais au texte direct), endpoints `/vision/plate` (items + questions de confirmation), `/vision/label` (OCR étiquette), `/vision/machine` (pipeline perception→DeepSeek→fiche equipment). App : `captureImage` (expo-image-picker), hooks vision, câblage **étiquette→saisie manuelle** (préremplissage) et **machine→equipment** (dans /workout-new). **20 tests serveur**.
+
 ## En cours / prochaines étapes
-- [ ] Milestone 9 : pipeline vision Gemini→DeepSeek (assiette avec questions, OCR étiquette, scan machine→equipment).
+- [ ] Milestone 10 : coach agentique (function calling, outils lecture+action owner-scoped serveur, propose→confirme→applique).
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -40,6 +42,7 @@
 - [x] 6 Workouts + salles
 - [x] 7 Health sync (Health Connect)
 - [x] 8 IA texte (proxy OpenRouter)
+- [x] 9 IA vision (Gemini→DeepSeek)
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -88,4 +91,6 @@
 - [ ] Installer **gitleaks** en pre-commit (complète le secret-scan intégré). Le hook `gate.mjs` a un scanner de secours mais gitleaks couvre plus large.
 
 ## Problèmes connus / dettes
-- (aucun pour l'instant)
+- **Vision assiette** : hook `usePlateVision` + endpoint prêts, mais l'UI complète de confirmation (poser les 1-3 questions puis appeler parse-food sur les items confirmés) reste à construire. Étiquette et machine sont câblées de bout en bout.
+- **UI IA texte** : seuls parse-food (log NL) et vision sont câblés côté app ; meal-plan/summary/shopping-list/substitutions ont leurs endpoints serveur + client mais pas encore d'écrans dédiés (à faire au fil de l'eau / M11).
+- Tests runtime device : scan caméra, Health Connect, sync live PocketBase → nécessitent un dev build (voir « À FAIRE »).

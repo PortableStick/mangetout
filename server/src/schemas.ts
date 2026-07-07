@@ -81,5 +81,36 @@ export const substitutionsSchema = z.object({
   options: z.array(z.object({ name: z.string(), why: z.string() })).max(8),
 });
 
+// --- Vision (perception → raisonnement) ---
+
+/** Photo d'assiette → items perçus + 1-3 questions de confirmation (fiabilité). */
+export const platePerceptionSchema = z.object({
+  items: z.array(z.object({ name: z.string().min(1), portion_guess: z.string() })).max(20),
+  questions: z.array(z.string()).max(3),
+});
+
+/** OCR d'étiquette nutritionnelle → valeurs structurées. */
+export const labelSchema = z.object({
+  name: z.string().default(''),
+  per_100g: macrosSchema,
+  per_portion: macrosSchema.optional(),
+  serving_size: z.string().optional(),
+});
+
+/** Perception d'affiche de machine (texte brut lu par le modèle vision). */
+export const machinePerceptionSchema = z.object({
+  raw_name: z.string().min(1),
+  visible_text: z.string().optional(),
+  muscles_text: z.string().optional(),
+});
+
+/** Machine normalisée par le modèle texte → alimente la collection equipment. */
+export const machineSchema = z.object({
+  canonical_name: z.string().min(1),
+  muscle_groups: z.array(z.string()).max(6),
+  movement_pattern: z.string().optional(),
+  how_to: z.string().optional(),
+});
+
 export type ParseFood = z.infer<typeof parseFoodSchema>;
 export type MealPlan = z.infer<typeof mealPlanSchema>;
