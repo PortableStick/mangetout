@@ -1,3 +1,5 @@
+import '@/lib/polyfills'; // EventSource pour PocketBase realtime/OAuth2 (doit être en premier)
+
 import {
   Inter_400Regular,
   Inter_500Medium,
