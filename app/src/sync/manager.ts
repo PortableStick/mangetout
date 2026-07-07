@@ -110,3 +110,9 @@ export class SyncManager {
     return reports;
   }
 }
+
+let instance: SyncManager | null = null;
+/** Singleton partagé — UNE seule file/curseur pour toute l'app. */
+export function getSyncManager(): SyncManager {
+  return (instance ??= new SyncManager());
+}

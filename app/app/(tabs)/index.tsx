@@ -1,9 +1,12 @@
-import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { useWeightEntries } from '@/features/weight/useWeight';
+import { weightStats } from '@/features/weight/weight';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /**
@@ -13,6 +16,9 @@ import { useTheme } from '@/theme/ThemeProvider';
  */
 export default function DashboardScreen() {
   const theme = useTheme();
+  const router = useRouter();
+  const { data: weightEntries = [] } = useWeightEntries();
+  const weight = weightStats(weightEntries);
 
   return (
     <Screen>
@@ -38,15 +44,24 @@ export default function DashboardScreen() {
       </Card>
 
       {/* Tendance de poids */}
-      <Card>
-        <Text variant="headline">Poids</Text>
-        <Text variant="subhead" color="textSecondary">
-          Aucune entrée pour l’instant.
-        </Text>
-        <Text variant="footnote" color="textTertiary">
-          Le graphe de tendance apparaîtra après ta première pesée.
-        </Text>
-      </Card>
+      <Pressable onPress={() => router.push('/weight')}>
+        <Card>
+          <Text variant="headline">Poids</Text>
+          {weight.latest !== undefined ? (
+            <>
+              <Text variant="title2">{weight.latest} kg</Text>
+              <Text variant="footnote" color="textTertiary">
+                {weight.delta > 0 ? '+' : ''}
+                {weight.delta} kg depuis le début · appuie pour le détail
+              </Text>
+            </>
+          ) : (
+            <Text variant="subhead" color="textSecondary">
+              Ajoute une pesée pour suivre la tendance.
+            </Text>
+          )}
+        </Card>
+      </Pressable>
 
       {/* Activité (Health Connect) */}
       <Card>

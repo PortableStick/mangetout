@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/manual-entry` (M4), prête à merger
-- Dernier milestone terminé : **4 — Saisie manuelle + recettes** (vert : tsc + lint + 61 tests)
-- Prochain milestone : 5 — Poids / mensurations + graphe
+- Branche active : `feat/weight` (M5), prête à merger
+- Dernier milestone terminé : **5 — Poids / mensurations + graphe** (vert : tsc + lint + 67 tests + expo-doctor 20/20)
+- Prochain milestone : 6 — Workouts + salles
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -19,8 +19,10 @@
 
 - [x] M4 saisie manuelle + recettes : calcul recette pur (`recipes.ts` — macros repas, par portion, poids), aliment manuel + écran `/add-food`, repas réutilisables (`/meals` + composeur `/meal-new`), `MealPicker`/`Field` réutilisables, hooks React Query (foods/meals/saveMeal/addMealToJournal). **61 tests**.
 
+- [x] M5 poids : logique pure (`weight.ts` — tri, stats delta/min/max, géométrie de courbe SVG), `WeightChart` (react-native-svg), écran `/weight` (pesée + historique + tendance), carte dashboard live & cliquable. Singleton `getSyncManager` partagé (une seule file). **67 tests**.
+
 ## En cours / prochaines étapes
-- [ ] Milestone 5 : entrées poids/mensurations datées + graphe de tendance.
+- [ ] Milestone 6 : séances/exos/séries + historique, salles (Basic-Fit seedée + perso), équipement par salle, générateur contraint au matériel.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -28,6 +30,7 @@
 - [x] 2 Data layer + sync (CRITIQUE)
 - [x] 3 Food + barcode (OpenFoodFacts)
 - [x] 4 Saisie manuelle + recettes
+- [x] 5 Poids / mensurations + graphe
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations

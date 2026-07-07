@@ -3,17 +3,14 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { syncRecords } from '@/db/schema';
 import { newId } from '@/lib/id';
-import { SyncManager } from '@/sync/manager';
+import { getSyncManager } from '@/sync/manager';
 
 import { macrosForQuantity } from './nutrition';
 import type { MealComponent } from './recipes';
 import type { Food, FoodEntry, MealType } from './types';
 
-let cached: SyncManager | null = null;
-/** Singleton paresseux (évite d'ouvrir la DB à l'import, ex. en test). */
-export function syncManager(): SyncManager {
-  return (cached ??= new SyncManager());
-}
+/** Réexport du singleton partagé (une seule file de sync pour toute l'app). */
+export const syncManager = getSyncManager;
 
 export interface AddEntryInput {
   food: Food;
