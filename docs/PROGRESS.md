@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/weight` (M5), prête à merger
-- Dernier milestone terminé : **5 — Poids / mensurations + graphe** (vert : tsc + lint + 67 tests + expo-doctor 20/20)
-- Prochain milestone : 6 — Workouts + salles
+- Branche active : `feat/workouts-gyms` (M6), prête à merger
+- Dernier milestone terminé : **6 — Workouts + salles** (vert : tsc + lint + 72 tests)
+- Prochain milestone : 7 — Health sync (Health Connect)
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -21,8 +21,10 @@
 
 - [x] M5 poids : logique pure (`weight.ts` — tri, stats delta/min/max, géométrie de courbe SVG), `WeightChart` (react-native-svg), écran `/weight` (pesée + historique + tendance), carte dashboard live & cliquable. Singleton `getSyncManager` partagé (une seule file). **67 tests**.
 
+- [x] M6 workouts + salles : catalogue équipement Basic-Fit + seed 2 salles (idempotent), générateur pur contraint au matériel de la salle (greedy couverture, déterministe), repository CRUD (workouts/exercises/sets), onglet Séances (seed + historique) + écran `/workout-new` (choix salle, groupes ciblés, génération/ajout manuel, séries). **72 tests** (générateur).
+
 ## En cours / prochaines étapes
-- [ ] Milestone 6 : séances/exos/séries + historique, salles (Basic-Fit seedée + perso), équipement par salle, générateur contraint au matériel.
+- [ ] Milestone 7 : `useHealthData` (couche neutre) → Health Connect Android, permissions, import pas/calories actives.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -31,6 +33,7 @@
 - [x] 3 Food + barcode (OpenFoodFacts)
 - [x] 4 Saisie manuelle + recettes
 - [x] 5 Poids / mensurations + graphe
+- [x] 6 Workouts + salles
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
