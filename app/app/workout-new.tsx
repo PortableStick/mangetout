@@ -1,0 +1,192 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, View } from 'react-native';
+
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Field } from '@/components/ui/Field';
+import { Screen } from '@/components/ui/Screen';
+import { Text } from '@/components/ui/Text';
+import { today } from '@/features/food/useFoodLog';
+import { generateWorkout } from '@/features/workouts/generator';
+import { MUSCLE_LABELS, type Equipment, type MuscleGroup } from '@/features/workouts/types';
+import { useCreateWorkout, useEquipment, useGyms } from '@/features/workouts/useWorkouts';
+import { useTheme } from '@/theme/ThemeProvider';
+
+const numOf = (s: string) => Number.parseFloat(s.replace(',', '.')) || 0;
+
+interface DraftSet {
+  reps: number;
+  weight_kg: number;
+}
+interface DraftExercise {
+  name: string;
+  equipmentId?: string;
+  sets: DraftSet[];
+}
+
+const MUSCLES = Object.keys(MUSCLE_LABELS) as MuscleGroup[];
+
+export default function WorkoutNewScreen() {
+  const theme = useTheme();
+  const router = useRouter();
+  const { data: gyms = [] } = useGyms();
+  const [selectedGymId, setGymId] = useState<string>();
+  // Salle active = sélection explicite, sinon la première (dérivé, pas d'effet).
+  const gymId = selectedGymId ?? gyms[0]?.id;
+  const { data: equipment = [] } = useEquipment(gymId);
+  const create = useCreateWorkout();
+
+  const [targets, setTargets] = useState<MuscleGroup[]>([]);
+  const [exercises, setExercises] = useState<DraftExercise[]>([]);
+
+  const toggleTarget = (m: MuscleGroup) =>
+    setTargets((t) => (t.includes(m) ? t.filter((x) => x !== m) : [...t, m]));
+
+  const generate = () => {
+    const picked = generateWorkout(equipment, { targets, count: 6 });
+    setExercises(picked.map((e) => ({ name: e.name, equipmentId: e.id, sets: [{ reps: 10, weight_kg: 0 }] })));
+  };
+
+  const addFromEquipment = (e: Equipment) =>
+    setExercises((ex) => [...ex, { name: e.name, equipmentId: e.id, sets: [{ reps: 10, weight_kg: 0 }] }]);
+
+  const addSet = (i: number) =>
+    setExercises((ex) =>
+      ex.map((e, idx) => (idx === i ? { ...e, sets: [...e.sets, { reps: 10, weight_kg: 0 }] } : e))
+    );
+  const setField = (i: number, s: number, field: keyof DraftSet, value: number) =>
+    setExercises((ex) =>
+      ex.map((e, idx) =>
+        idx === i
+          ? { ...e, sets: e.sets.map((set, sIdx) => (sIdx === s ? { ...set, [field]: value } : set)) }
+          : e
+      )
+    );
+  const removeExercise = (i: number) => setExercises((ex) => ex.filter((_, idx) => idx !== i));
+
+  const canSave = !!gymId && exercises.length > 0;
+
+  return (
+    <Screen>
+      <Text variant="largeTitle">Nouvelle séance</Text>
+
+      <Text variant="footnote" color="textTertiary">
+        Salle
+      </Text>
+      <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+        {gyms.map((g) => (
+          <Chip key={g.id} label={g.name} active={gymId === g.id} onPress={() => setGymId(g.id)} />
+        ))}
+      </View>
+
+      <Text variant="footnote" color="textTertiary">
+        Groupes ciblés (optionnel)
+      </Text>
+      <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+        {MUSCLES.map((m) => (
+          <Chip key={m} label={MUSCLE_LABELS[m]} active={targets.includes(m)} onPress={() => toggleTarget(m)} />
+        ))}
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+        <Button label="Générer" variant="secondary" onPress={generate} style={{ flex: 1 }} />
+        {exercises.length > 0 ? (
+          <Button label="Vider" variant="ghost" onPress={() => setExercises([])} style={{ flex: 1 }} />
+        ) : null}
+      </View>
+
+      {exercises.map((ex, i) => (
+        <Card key={`${ex.equipmentId ?? ex.name}-${i}`}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text variant="headline" style={{ flex: 1 }}>
+              {ex.name}
+            </Text>
+            <Pressable onPress={() => removeExercise(i)} accessibilityRole="button">
+              <Ionicons name="close-circle" size={22} color={theme.colors.textTertiary} />
+            </Pressable>
+          </View>
+          {ex.sets.map((s, sIdx) => (
+            <View key={sIdx} style={{ flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' }}>
+              <Text variant="footnote" color="textTertiary" style={{ width: 20 }}>
+                {sIdx + 1}
+              </Text>
+              <Field
+                value={String(s.reps)}
+                onChangeText={(v) => setField(i, sIdx, 'reps', Math.round(numOf(v)))}
+                keyboardType="numeric"
+                style={{ width: 64, paddingVertical: 8, textAlign: 'center' }}
+              />
+              <Text variant="footnote" color="textTertiary">
+                reps ×
+              </Text>
+              <Field
+                value={String(s.weight_kg)}
+                onChangeText={(v) => setField(i, sIdx, 'weight_kg', numOf(v))}
+                keyboardType="numeric"
+                style={{ width: 74, paddingVertical: 8, textAlign: 'center' }}
+              />
+              <Text variant="footnote" color="textTertiary">
+                kg
+              </Text>
+            </View>
+          ))}
+          <Pressable onPress={() => addSet(i)}>
+            <Text variant="footnote" color="accent">
+              + série
+            </Text>
+          </Pressable>
+        </Card>
+      ))}
+
+      {gymId && equipment.length > 0 ? (
+        <Card>
+          <Text variant="headline">Ajouter un exercice</Text>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+            {equipment.slice(0, 40).map((e) => (
+              <Chip key={e.id} label={e.name} active={false} onPress={() => addFromEquipment(e)} />
+            ))}
+          </View>
+        </Card>
+      ) : gymId ? (
+        <Text variant="footnote" color="textTertiary">
+          Cette salle n’a pas encore d’équipement. Ajoute-en depuis la salle (ou scan d’affiche, bientôt).
+        </Text>
+      ) : null}
+
+      <Button
+        label="Enregistrer la séance"
+        disabled={!canSave}
+        loading={create.isPending}
+        onPress={() =>
+          create.mutate(
+            { gymId: gymId!, date: today(), exercises },
+            { onSuccess: () => router.back() }
+          )
+        }
+        style={{ marginTop: 8 }}
+      />
+      <Button label="Annuler" variant="ghost" onPress={() => router.back()} />
+    </Screen>
+  );
+}
+
+function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingVertical: 8,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.radius.pill,
+        backgroundColor: active ? theme.colors.accent : theme.colors.surfaceMuted,
+      }}
+    >
+      <Text variant="footnote" color={active ? 'onAccent' : 'textSecondary'}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
