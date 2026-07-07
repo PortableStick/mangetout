@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { useHealthData } from '@/features/health/useHealthData';
+import { today } from '@/features/food/useFoodLog';
 import { useWeightEntries } from '@/features/weight/useWeight';
 import { weightStats } from '@/features/weight/weight';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -19,6 +21,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { data: weightEntries = [] } = useWeightEntries();
   const weight = weightStats(weightEntries);
+  const health = useHealthData(today());
 
   return (
     <Screen>
@@ -67,10 +70,20 @@ export default function DashboardScreen() {
       <Card>
         <Text variant="headline">Activité</Text>
         <View style={{ flexDirection: 'row', gap: theme.spacing.xl, marginTop: theme.spacing.xs }}>
-          <Stat label="Pas" value="—" />
-          <Stat label="Cal. actives" value="—" />
+          <Stat label="Pas" value={health.summary.steps > 0 ? String(health.summary.steps) : '—'} />
+          <Stat
+            label="Cal. actives"
+            value={health.summary.activeCalories > 0 ? `${health.summary.activeCalories}` : '—'}
+          />
           <Stat label="Streak" value="0 j" />
         </View>
+        {health.providerName === 'health-connect' && health.summary.steps === 0 ? (
+          <Pressable onPress={health.requestPermission} disabled={health.requesting}>
+            <Text variant="footnote" color="accent">
+              {health.requesting ? 'Connexion…' : 'Connecter Health Connect'}
+            </Text>
+          </Pressable>
+        ) : null}
       </Card>
     </Screen>
   );

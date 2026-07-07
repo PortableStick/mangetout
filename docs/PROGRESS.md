@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/workouts-gyms` (M6), prête à merger
-- Dernier milestone terminé : **6 — Workouts + salles** (vert : tsc + lint + 72 tests)
-- Prochain milestone : 7 — Health sync (Health Connect)
+- Branche active : `feat/health-sync` (M7), prête à merger
+- Dernier milestone terminé : **7 — Health sync** (vert : tsc + lint + 75 tests + expo-doctor 20/20)
+- Prochain milestone : 8 — IA texte (proxy OpenRouter)
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -23,8 +23,10 @@
 
 - [x] M6 workouts + salles : catalogue équipement Basic-Fit + seed 2 salles (idempotent), générateur pur contraint au matériel de la salle (greedy couverture, déterministe), repository CRUD (workouts/exercises/sets), onglet Séances (seed + historique) + écran `/workout-new` (choix salle, groupes ciblés, génération/ajout manuel, séries). **72 tests** (générateur).
 
+- [x] M7 health sync : couche NEUTRE `HealthProvider` (extensible HealthKit sans réécriture), provider Health Connect (Android, `getSdkStatus`/`initialize`/`requestPermission`/`aggregateRecord` pas + calories actives), nullProvider (autres OS), sélection par OS, hook `useHealthData`, carte Activité du dashboard live + « Connecter Health Connect ». **75 tests** (sélection provider + null).
+
 ## En cours / prochaines étapes
-- [ ] Milestone 7 : `useHealthData` (couche neutre) → Health Connect Android, permissions, import pas/calories actives.
+- [ ] Milestone 8 : proxy IA serveur (clé OpenRouter server-only), endpoints texte, sorties JSON zod, cache + rate-limit.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -34,6 +36,7 @@
 - [x] 4 Saisie manuelle + recettes
 - [x] 5 Poids / mensurations + graphe
 - [x] 6 Workouts + salles
+- [x] 7 Health sync (Health Connect)
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -65,6 +68,7 @@
 
 ### Comptes & services externes
 - [ ] Compte/projet **EAS** (Expo) pour le dev build + APK/AAB Android.
+- [ ] **Health Connect** : modules natifs (`react-native-health-connect`) → nécessitent un **development build** (pas Expo Go). Installer l'app Health Connect sur l'appareil, tester permissions + import pas/calories actives sur device.
 - [ ] Enregistrement du client OIDC dans **Authelia**.
 
 ### Déploiement homelab
