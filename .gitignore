@@ -1,0 +1,52 @@
+# === Secrets (dépôt PUBLIC — vigilance maximale) ===
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p8
+*.keystore
+*.jks
+secrets/
+**/pb_data/
+restic-password*
+authelia-*.secret
+
+# === Node ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+coverage/
+dist/
+build/
+
+# === Expo / React Native ===
+.expo/
+.expo-shared/
+*.orig.*
+web-build/
+android/
+ios/
+*.apk
+*.aab
+*.ipa
+.eas/
+
+# === Drizzle / SQLite ===
+*.sqlite
+*.sqlite3
+*.db
+!**/migrations/**/*.sql
+
+# === Outils ===
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# === Claude Code : on committe agents + settings.json + brief, on ignore le local ===
+.claude/settings.local.json
+.claude/**/*.local.*
