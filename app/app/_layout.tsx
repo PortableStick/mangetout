@@ -57,6 +57,7 @@ function RootNavigator() {
       <Stack.Screen name="meal-new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="weight" />
       <Stack.Screen name="workout-new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="ai-log" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

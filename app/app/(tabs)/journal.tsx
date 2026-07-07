@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { env } from '@/config/env';
 import { sumMacros } from '@/features/food/nutrition';
 import { MEAL_LABELS, MEAL_TYPES, type FoodEntry, type MealType } from '@/features/food/types';
 import { today, useDeleteFoodEntry, useFoodEntries } from '@/features/food/useFoodLog';
@@ -26,6 +27,9 @@ export default function JournalScreen() {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text variant="largeTitle">Journal</Text>
         <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          {env.aiEnabled ? (
+            <HeaderButton icon="sparkles-outline" variant="muted" onPress={() => router.push('/ai-log')} />
+          ) : null}
           <HeaderButton icon="restaurant-outline" variant="muted" onPress={() => router.push('/meals')} />
           <HeaderButton icon="create-outline" variant="muted" onPress={() => router.push('/add-food')} />
           <HeaderButton icon="barcode-outline" variant="accent" onPress={() => router.push('/scan')} />
