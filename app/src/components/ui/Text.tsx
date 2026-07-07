@@ -3,7 +3,15 @@ import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { TypographyVariant } from '@/theme/tokens';
 
-type ColorKey = 'text' | 'textSecondary' | 'textTertiary' | 'accent' | 'onAccent' | 'danger' | 'success';
+type ColorKey =
+  | 'text'
+  | 'textSecondary'
+  | 'textTertiary'
+  | 'accent'
+  | 'onAccent'
+  | 'danger'
+  | 'success'
+  | 'warning';
 
 export interface TextProps extends RNTextProps {
   variant?: TypographyVariant;

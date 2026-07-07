@@ -1,9 +1,10 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/ai-coach` (M10), revue sécurité en cours avant merge
-- Dernier milestone terminé : **10 — Coach agentique** (vert : app 75 tests + serveur 28 tests)
-- Prochain milestone : 11 — Dashboard + polish
+- Branche active : `chore/polish` (M11), prête à merger
+- Dernier milestone terminé : **11 — Dashboard + polish** — 🎉 **tous les milestones 0→11 terminés**
+- Prochain : durcissement post-déploiement (voir « À FAIRE humain ») — l'app compile, teste et passe expo-doctor ; reste le dev build device + déploiement homelab + secrets.
+- Total tests : **app 79 · serveur 28** (tsc + lint + expo-doctor 20/20 verts).
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -31,8 +32,7 @@
 
 - [x] M10 coach agentique : registre d'outils (lecture + action) avec args zod, `runCoach` (boucle tool-calling bornée, reasoning passthrough), lecture owner-scoped, **action = proposition** ; `applyAction` exécute après validation avec `user` = utilisateur vérifié (jamais celui du modèle). Écran Coach (chat + carte de confirmation → apply). **28 tests serveur** (validation, owner-scoping, proposition≠exécution).
 
-## En cours / prochaines étapes
-- [ ] Milestone 11 : agrégation dashboard, dark mode Apple, empty states, offline UX, écran À propos (ODbL).
+- [x] M11 dashboard + polish : dashboard agrégé (kcal/macros du jour vs objectifs avec barres, tendance poids, activité, **streak** calculé), objectifs éditables (Réglages), **synchronisation** auto (montage + retour premier plan) + bouton manuel + statut hors-ligne, écran **À propos** (mention **ODbL** Open Food Facts + note confidentialité IA). **79 tests app** (streak ajouté).
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -46,6 +46,7 @@
 - [x] 8 IA texte (proxy OpenRouter)
 - [x] 9 IA vision (Gemini→DeepSeek)
 - [x] 10 Coach IA agentique
+- [x] 11 Dashboard + polish
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations

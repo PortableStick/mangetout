@@ -7,6 +7,7 @@ import {
   addMealToJournal,
   deleteFoodEntry,
   listEntriesByDate,
+  listEntryDates,
   listFoods,
   listMeals,
   saveMeal,
@@ -52,6 +53,10 @@ export function useDeleteFoodEntry() {
 
 export function useFoods() {
   return useQuery({ queryKey: ['foods'], queryFn: async () => listFoods() });
+}
+
+export function useEntryDates() {
+  return useQuery({ queryKey: ['entry-dates'], queryFn: async () => listEntryDates() });
 }
 
 export function useMeals() {

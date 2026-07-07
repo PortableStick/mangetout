@@ -65,6 +65,21 @@ export function listEntriesByDate(date: string): FoodEntry[] {
     .filter((e) => e.date === date);
 }
 
+/** Dates distinctes ayant au moins une entrée (pour le calcul de streak). */
+export function listEntryDates(): string[] {
+  const dates = new Set(listEntriesByDateAll().map((e) => e.date));
+  return [...dates];
+}
+
+function listEntriesByDateAll(): FoodEntry[] {
+  const rows = db
+    .select()
+    .from(syncRecords)
+    .where(and(eq(syncRecords.collection, 'food_entries'), eq(syncRecords.deleted, false)))
+    .all();
+  return rows.map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as FoodEntry);
+}
+
 export async function deleteFoodEntry(entry: FoodEntry, userId: string): Promise<void> {
   await syncManager().enqueue('food_entries', 'delete', {
     ...entry,
