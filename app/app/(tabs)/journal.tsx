@@ -25,20 +25,11 @@ export default function JournalScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text variant="largeTitle">Journal</Text>
-        <Pressable
-          onPress={() => router.push('/scan')}
-          accessibilityRole="button"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: theme.radius.pill,
-            backgroundColor: theme.colors.accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="barcode-outline" size={22} color={theme.colors.onAccent} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          <HeaderButton icon="restaurant-outline" variant="muted" onPress={() => router.push('/meals')} />
+          <HeaderButton icon="create-outline" variant="muted" onPress={() => router.push('/add-food')} />
+          <HeaderButton icon="barcode-outline" variant="accent" onPress={() => router.push('/scan')} />
+        </View>
       </View>
 
       <Card>
@@ -84,6 +75,35 @@ export default function JournalScreen() {
         })
       )}
     </Screen>
+  );
+}
+
+function HeaderButton({
+  icon,
+  variant,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  variant: 'accent' | 'muted';
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const accent = variant === 'accent';
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: theme.radius.pill,
+        backgroundColor: accent ? theme.colors.accent : theme.colors.surfaceMuted,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Ionicons name={icon} size={20} color={accent ? theme.colors.onAccent : theme.colors.accent} />
+    </Pressable>
   );
 }
 

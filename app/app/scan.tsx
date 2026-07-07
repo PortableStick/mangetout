@@ -1,15 +1,16 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { MealPicker } from '@/features/food/MealPicker';
 import { lookupBarcode, type OffLookup } from '@/features/food/openFoodFacts';
 import { macrosForQuantity } from '@/features/food/nutrition';
-import { MEAL_LABELS, MEAL_TYPES, type Food, type MealType } from '@/features/food/types';
+import { type Food, type MealType } from '@/features/food/types';
 import { today, useAddFoodEntry } from '@/features/food/useFoodLog';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -148,24 +149,7 @@ function ResultSheet({
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
-        {MEAL_TYPES.map((m) => (
-          <Pressable
-            key={m}
-            onPress={() => setMeal(m)}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: theme.spacing.md,
-              borderRadius: theme.radius.pill,
-              backgroundColor: meal === m ? theme.colors.accent : theme.colors.surfaceMuted,
-            }}
-          >
-            <Text variant="footnote" color={meal === m ? 'onAccent' : 'textSecondary'}>
-              {MEAL_LABELS[m]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <MealPicker value={meal} onChange={setMeal} />
 
       <Button
         label="Ajouter au journal"

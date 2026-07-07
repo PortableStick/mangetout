@@ -1,9 +1,9 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/food-barcode` (M3), prête à merger
-- Dernier milestone terminé : **3 — Food + barcode** (vert : tsc + lint + 57 tests + expo-doctor 20/20)
-- Prochain milestone : 4 — Saisie manuelle + recettes
+- Branche active : `feat/manual-entry` (M4), prête à merger
+- Dernier milestone terminé : **4 — Saisie manuelle + recettes** (vert : tsc + lint + 61 tests)
+- Prochain milestone : 5 — Poids / mensurations + graphe
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -17,14 +17,17 @@
 
 - [x] M3 food + barcode : client OpenFoodFacts (`openFoodFacts.ts` — User-Agent custom, `fields=`, conversion kJ→kcal, gestion inconnu/incomplet, zod), calcul nutrition pur (`nutrition.ts` — macros au prorata, sommes, Atwater), scan `CameraView` (formats ean13/ean8/upc_a/upc_e), écran journal (repas + totaux + suppression), repository + hooks React Query. **57 tests** (nutrition + mapping/lookup OFF).
 
+- [x] M4 saisie manuelle + recettes : calcul recette pur (`recipes.ts` — macros repas, par portion, poids), aliment manuel + écran `/add-food`, repas réutilisables (`/meals` + composeur `/meal-new`), `MealPicker`/`Field` réutilisables, hooks React Query (foods/meals/saveMeal/addMealToJournal). **61 tests**.
+
 ## En cours / prochaines étapes
-- [ ] Milestone 4 : aliments/recettes custom, composition de repas réutilisables.
+- [ ] Milestone 5 : entrées poids/mensurations datées + graphe de tendance.
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
 - [x] 1 Auth OIDC
 - [x] 2 Data layer + sync (CRITIQUE)
 - [x] 3 Food + barcode (OpenFoodFacts)
+- [x] 4 Saisie manuelle + recettes
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
