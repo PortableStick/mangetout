@@ -5,23 +5,32 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { useGoals } from '@/features/goals/useGoals';
 import { useHealthData } from '@/features/health/useHealthData';
-import { today } from '@/features/food/useFoodLog';
+import { goalProgress, sumMacros } from '@/features/food/nutrition';
+import { today, useEntryDates, useFoodEntries } from '@/features/food/useFoodLog';
+import { computeStreak } from '@/features/stats/streak';
 import { useWeightEntries } from '@/features/weight/useWeight';
 import { weightStats } from '@/features/weight/weight';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /**
- * Dashboard d'accueil (route par défaut). Squelette du Milestone 0 :
- * s'enrichit au fur et à mesure que les données arrivent (kcal/macros, poids,
- * pas & calories actives, séries, streak, raccourcis).
+ * Dashboard d'accueil (route par défaut). Agrège : kcal/macros du jour vs objectif,
+ * tendance de poids, activité (Health Connect), streak.
  */
 export default function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const date = today();
+  const { data: entries = [] } = useFoodEntries(date);
+  const { data: goals } = useGoals();
+  const { data: entryDates = [] } = useEntryDates();
   const { data: weightEntries = [] } = useWeightEntries();
   const weight = weightStats(weightEntries);
-  const health = useHealthData(today());
+  const health = useHealthData(date);
+
+  const total = sumMacros(entries);
+  const streak = computeStreak(entryDates, date);
 
   return (
     <Screen>
@@ -36,14 +45,16 @@ export default function DashboardScreen() {
       <Card>
         <Text variant="headline">Calories &amp; macros</Text>
         <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.xs }}>
-          <MacroRow label="Calories" unit="kcal" color={theme.colors.accent} />
-          <MacroRow label="Protéines" unit="g" color={theme.colors.success} />
-          <MacroRow label="Glucides" unit="g" color={theme.colors.warning} />
-          <MacroRow label="Lipides" unit="g" color={theme.colors.danger} />
+          <MacroRow label="Calories" unit="kcal" value={total.kcal} goal={goals?.kcal} color={theme.colors.accent} />
+          <MacroRow label="Protéines" unit="g" value={total.protein_g} goal={goals?.protein_g} color={theme.colors.success} />
+          <MacroRow label="Glucides" unit="g" value={total.carbs_g} goal={goals?.carbs_g} color={theme.colors.warning} />
+          <MacroRow label="Lipides" unit="g" value={total.fat_g} goal={goals?.fat_g} color={theme.colors.danger} />
         </View>
-        <Text variant="footnote" color="textTertiary">
-          Définis tes objectifs dans Réglages pour suivre ta progression.
-        </Text>
+        {!goals ? (
+          <Text variant="footnote" color="textTertiary">
+            Définis tes objectifs dans Réglages pour suivre ta progression.
+          </Text>
+        ) : null}
       </Card>
 
       {/* Tendance de poids */}
@@ -75,7 +86,7 @@ export default function DashboardScreen() {
             label="Cal. actives"
             value={health.summary.activeCalories > 0 ? `${health.summary.activeCalories}` : '—'}
           />
-          <Stat label="Streak" value="0 j" />
+          <Stat label="Streak" value={`${streak} j`} />
         </View>
         {health.providerName === 'health-connect' && health.summary.steps === 0 ? (
           <Pressable onPress={health.requestPermission} disabled={health.requesting}>
@@ -89,7 +100,19 @@ export default function DashboardScreen() {
   );
 }
 
-function MacroRow({ label, unit, color }: { label: string; unit: string; color: string }) {
+function MacroRow({
+  label,
+  unit,
+  value,
+  goal,
+  color,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  goal?: number;
+  color: string;
+}) {
   return (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -97,10 +120,10 @@ function MacroRow({ label, unit, color }: { label: string; unit: string; color: 
           {label}
         </Text>
         <Text variant="subhead" color="textTertiary">
-          0 / — {unit}
+          {value} / {goal ?? '—'} {unit}
         </Text>
       </View>
-      <ProgressBar progress={0} color={color} />
+      <ProgressBar progress={goal ? goalProgress(value, goal) : 0} color={color} />
     </View>
   );
 }

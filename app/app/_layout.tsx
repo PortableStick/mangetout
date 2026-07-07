@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { useAutoSync } from '@/features/sync/useSync';
 import { queryClient } from '@/lib/queryClient';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
@@ -38,6 +39,7 @@ function useAuthGate() {
 function RootNavigator() {
   const { ready } = useAuth();
   useAuthGate();
+  useAutoSync();
 
   // Masque le splash seulement quand la session est chargée : évite le flash
   // de contenu protégé avant la redirection vers /login.
@@ -58,6 +60,7 @@ function RootNavigator() {
       <Stack.Screen name="weight" />
       <Stack.Screen name="workout-new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="ai-log" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="about" />
     </Stack>
   );
 }

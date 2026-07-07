@@ -48,8 +48,11 @@ mangetout/
 - Deps explicites requises : `babel-preset-expo`, `@react-native/jest-preset@0.86.0`. Tests : importer les globals depuis `@jest/globals`.
 - `app.json` : pas de `newArchEnabled` (nouvelle arch = défaut SDK 57).
 
+## État : milestones 0→11 terminés (code + tests verts). Reste : dev build device, déploiement homelab, secrets (voir docs/PROGRESS.md « À FAIRE humain »).
+
 ## Commandes utiles
 - App : `cd app && npm run typecheck` · `npm run lint` · `npm test` · `npx expo start --dev-client`
+- Server : `cd server && npm run typecheck && npm test` (run : `npm run dev` / prod `tsx src/index.ts`)
 - Server : `cd server && npm run typecheck && npm test`
 - Porte qualité (manuelle) : `node .claude/hooks/gate.mjs --merge`
 - Infra : `cd infra && docker compose up -d` (voir `infra/README.md`)
