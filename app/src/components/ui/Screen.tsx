@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 
 interface ScreenProps {
-  children: ReactNode;
+  children?: ReactNode;
   /** Contenu défilable (par défaut) ou fixe. */
   scroll?: boolean;
   /** Padding horizontal (défaut : xl). */

@@ -30,7 +30,13 @@
           }
         }
       ],
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "mangetout utilise la caméra pour scanner les codes-barres des produits."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
