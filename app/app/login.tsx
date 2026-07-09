@@ -20,10 +20,16 @@ export default function LoginScreen() {
   async function run(action: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null);
     setLoading(true);
-    const res = await action();
-    setLoading(false);
-    if (!res.ok) setError(res.error ?? 'Connexion impossible.');
-    // En cas de succès, la garde de route (root layout) redirige automatiquement.
+    try {
+      const res = await action();
+      if (!res.ok) setError(res.error ?? 'Connexion impossible.');
+      // En cas de succès, la garde de route (root layout) redirige automatiquement.
+    } catch {
+      // Dernier filet : un rejet inattendu ne doit jamais crasher l'écran.
+      setError('Connexion impossible.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

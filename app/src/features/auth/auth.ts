@@ -42,28 +42,31 @@ function toUser(record: Record<string, unknown> | null): AuthUser {
 const CANCELED = '__canceled__';
 
 export async function signInWithOidc(): Promise<AuthResult> {
-  const redirectUrl = Linking.createURL('auth-callback');
-
-  // Le SDK attend le retour via son canal temps réel et ne rejette PAS si
-  // l'utilisateur ferme le navigateur → on court-circuite avec une promesse
-  // d'annulation déclenchée quand openAuthSessionAsync renvoie cancel/dismiss.
-  let onCancel: ((reason: Error) => void) | null = null;
-  const canceledPromise = new Promise<never>((_, reject) => {
-    onCancel = reject;
-  });
-
-  const authPromise = pb.collection(USERS).authWithOAuth2({
-    provider: env.oidcProvider,
-    urlCallback: (url) => {
-      void WebBrowser.openAuthSessionAsync(url, redirectUrl).then((result) => {
-        if (result.type === 'cancel' || result.type === 'dismiss') {
-          onCancel?.(new Error(CANCELED));
-        }
-      });
-    },
-  });
-
+  // Tout est dans le try : `Linking.createURL`, la construction de la promesse
+  // d'auth (le SDK peut lever de façon synchrone) et l'attente. Sinon une
+  // exception hors try remonterait en crash/red box au lieu d'un message affiché.
   try {
+    const redirectUrl = Linking.createURL('auth-callback');
+
+    // Le SDK attend le retour via son canal temps réel et ne rejette PAS si
+    // l'utilisateur ferme le navigateur → on court-circuite avec une promesse
+    // d'annulation déclenchée quand openAuthSessionAsync renvoie cancel/dismiss.
+    let onCancel: ((reason: Error) => void) | null = null;
+    const canceledPromise = new Promise<never>((_, reject) => {
+      onCancel = reject;
+    });
+
+    const authPromise = pb.collection(USERS).authWithOAuth2({
+      provider: env.oidcProvider,
+      urlCallback: (url) => {
+        void WebBrowser.openAuthSessionAsync(url, redirectUrl).then((result) => {
+          if (result.type === 'cancel' || result.type === 'dismiss') {
+            onCancel?.(new Error(CANCELED));
+          }
+        });
+      },
+    });
+
     const res = await Promise.race([authPromise, canceledPromise]);
     return { ok: true, user: toUser(res.record as Record<string, unknown>) };
   } catch (error) {
