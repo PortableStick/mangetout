@@ -12,8 +12,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useDbMigrations } from '@/db/migrations';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useAutoSync } from '@/features/sync/useSync';
 import { queryClient } from '@/lib/queryClient';
@@ -75,7 +77,12 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  if (!fontsLoaded) return null;
+  // Crée/migre la base SQLite locale AVANT tout accès (sync, écrans).
+  // Sans ça : « no such table: sync_queue » → crash au premier rendu connecté.
+  const { success: dbReady, error: dbError } = useDbMigrations();
+
+  if (dbError) return <FatalError message={`Erreur base locale : ${dbError.message}`} />;
+  if (!fontsLoaded || !dbReady) return null;
 
   return (
     <SafeAreaProvider>
@@ -88,5 +95,25 @@ export default function RootLayout() {
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** Écran d'erreur minimal (hors ThemeProvider) : n'assume aucun contexte. */
+function FatalError({ message }: { message: string }) {
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        backgroundColor: '#000',
+      }}
+    >
+      <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center' }}>{message}</Text>
+    </View>
   );
 }
