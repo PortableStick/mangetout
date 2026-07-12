@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useEquipment, useGyms, useSeedGyms } from '@/features/workouts/useWorkouts';
@@ -17,17 +19,19 @@ function GymRow({ gym }: { gym: Gym }) {
   const { data: equipment = [] } = useEquipment(gym.id);
 
   return (
-    <Pressable onPress={() => router.push({ pathname: '/gym-edit', params: { id: gym.id } })}>
-      <Card>
-        <Text variant="headline">{gym.name}</Text>
-        <Text variant="subhead" color="textSecondary">
-          {gym.gymType === 'chain' ? 'Chaîne' : 'Perso'}
-        </Text>
-        <Text variant="footnote" color="textTertiary">
-          {equipment.length} équipement{equipment.length > 1 ? 's' : ''}
-        </Text>
-      </Card>
-    </Pressable>
+    <Card style={{ padding: 0 }}>
+      <ListRow
+        title={gym.name}
+        subtitle={`${equipment.length} équipement${equipment.length > 1 ? 's' : ''}`}
+        right={
+          <Badge
+            label={gym.gymType === 'chain' ? 'Chaîne' : 'Perso'}
+            tone={gym.gymType === 'chain' ? 'accent' : 'neutral'}
+          />
+        }
+        onPress={() => router.push({ pathname: '/gym-edit', params: { id: gym.id } })}
+      />
+    </Card>
   );
 }
 

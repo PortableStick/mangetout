@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
@@ -6,6 +5,8 @@ import { Alert, Pressable, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { IconButton } from '@/components/ui/IconButton';
+import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
@@ -159,33 +160,25 @@ export default function GymEditScreen() {
           {equipment.map((e) => (
             <View
               key={e.id}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: theme.spacing.sm,
-                paddingVertical: theme.spacing.sm,
-                borderTopWidth: 1,
-                borderTopColor: theme.colors.separator,
-              }}
+              style={{ borderTopWidth: 1, borderTopColor: theme.colors.separator }}
             >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="body">{e.name}</Text>
-                <Text variant="footnote" color="textTertiary">
-                  {CATEGORY_LABELS[e.category]}
-                  {e.muscleGroups.length > 0
+              <ListRow
+                title={e.name}
+                subtitle={`${CATEGORY_LABELS[e.category]}${
+                  e.muscleGroups.length > 0
                     ? ` · ${e.muscleGroups.map((m) => MUSCLE_LABELS[m]).join(', ')}`
-                    : ''}
-                </Text>
-              </View>
-              <Pressable onPress={() => startEditEquipment(e)} accessibilityRole="button">
-                <Ionicons name="create-outline" size={20} color={theme.colors.textTertiary} />
-              </Pressable>
-              <Pressable
-                onPress={() => removeEquipment.mutate({ id: e.id, gymId: id })}
-                accessibilityRole="button"
-              >
-                <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
-              </Pressable>
+                    : ''
+                }`}
+                onPress={() => startEditEquipment(e)}
+                right={
+                  <IconButton
+                    name="trash-outline"
+                    tone="danger"
+                    accessibilityLabel="Retirer l’équipement"
+                    onPress={() => removeEquipment.mutate({ id: e.id, gymId: id })}
+                  />
+                }
+              />
             </View>
           ))}
         </Card>
