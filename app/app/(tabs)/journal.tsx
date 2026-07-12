@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
 import { sumMacros } from '@/features/food/nutrition';
@@ -24,17 +25,20 @@ export default function JournalScreen() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="largeTitle">Journal</Text>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-          {env.aiEnabled ? (
-            <HeaderButton icon="sparkles-outline" variant="muted" onPress={() => router.push('/ai-log')} />
-          ) : null}
-          <HeaderButton icon="restaurant-outline" variant="muted" onPress={() => router.push('/meals')} />
-          <HeaderButton icon="create-outline" variant="muted" onPress={() => router.push('/add-food')} />
-          <HeaderButton icon="barcode-outline" variant="accent" onPress={() => router.push('/scan')} />
-        </View>
-      </View>
+      <ScreenHeader
+        eyebrow="Journal"
+        title="Aujourd'hui"
+        right={
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+            {env.aiEnabled ? (
+              <HeaderButton icon="sparkles-outline" variant="muted" onPress={() => router.push('/ai-log')} />
+            ) : null}
+            <HeaderButton icon="restaurant-outline" variant="muted" onPress={() => router.push('/meals')} />
+            <HeaderButton icon="create-outline" variant="muted" onPress={() => router.push('/add-food')} />
+            <HeaderButton icon="barcode-outline" variant="accent" onPress={() => router.push('/scan')} />
+          </View>
+        }
+      />
 
       <Card>
         <Text variant="footnote" color="textTertiary">

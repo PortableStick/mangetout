@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
@@ -7,7 +6,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { useGyms, useSeedGyms, useWorkouts } from '@/features/workouts/useWorkouts';
 import type { Workout, WorkoutStatus } from '@/features/workouts/types';
@@ -64,7 +65,6 @@ function WorkoutCard({ workout, gymLabel }: { workout: WorkoutListItem; gymLabel
 }
 
 export default function WorkoutsScreen() {
-  const theme = useTheme();
   const router = useRouter();
   const { data: gyms = [] } = useGyms();
   const { data: workouts = [] } = useWorkouts();
@@ -84,7 +84,7 @@ export default function WorkoutsScreen() {
   if (gyms.length === 0) {
     return (
       <Screen>
-        <Text variant="largeTitle">Séances</Text>
+        <ScreenHeader eyebrow="Entraînement" title="Séances" />
         <Card>
           <Text variant="headline">Configure tes salles</Text>
           <Text variant="subhead" color="textSecondary">
@@ -104,23 +104,18 @@ export default function WorkoutsScreen() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="largeTitle">Séances</Text>
-        <Pressable
-          onPress={() => router.push('/workout-new')}
-          accessibilityRole="button"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: theme.radius.pill,
-            backgroundColor: theme.colors.accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="add" size={26} color={theme.colors.onAccent} />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        eyebrow="Entraînement"
+        title="Séances"
+        right={
+          <IconButton
+            name="add"
+            tone="accent"
+            accessibilityLabel="Nouvelle séance"
+            onPress={() => router.push('/workout-new')}
+          />
+        }
+      />
 
       {workouts.length === 0 ? (
         <EmptyState
@@ -133,7 +128,9 @@ export default function WorkoutsScreen() {
         <>
           {upcoming.length > 0 && (
             <>
-              <Text variant="title3">À venir</Text>
+              <Text variant="label" color="textTertiary">
+                À venir
+              </Text>
               {upcoming.map((w) => (
                 <WorkoutCard key={w.id} workout={w} gymLabel={gymName.get(w.gym) ?? 'Salle'} />
               ))}
@@ -141,7 +138,9 @@ export default function WorkoutsScreen() {
           )}
           {history.length > 0 && (
             <>
-              <Text variant="title3">Historique</Text>
+              <Text variant="label" color="textTertiary">
+                Historique
+              </Text>
               {history.map((w) => (
                 <WorkoutCard key={w.id} workout={w} gymLabel={gymName.get(w.gym) ?? 'Salle'} />
               ))}

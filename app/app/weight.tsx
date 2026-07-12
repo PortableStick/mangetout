@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { today } from '@/features/food/useFoodLog';
 import { WeightChart } from '@/features/weight/WeightChart';
@@ -30,7 +31,7 @@ export default function WeightScreen() {
 
   return (
     <Screen>
-      <Text variant="largeTitle">Poids</Text>
+      <ScreenHeader eyebrow="Suivi" title="Poids" />
 
       <Card>
         {stats.latest !== undefined ? (

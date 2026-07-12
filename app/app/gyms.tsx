@@ -1,17 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
 import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
-import { Text } from '@/components/ui/Text';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useEquipment, useGyms, useSeedGyms } from '@/features/workouts/useWorkouts';
 import type { Gym } from '@/features/workouts/types';
-import { useTheme } from '@/theme/ThemeProvider';
 
 /** Une ligne de la liste des salles : isole le hook `useEquipment` (règle des hooks, pas de map). */
 function GymRow({ gym }: { gym: Gym }) {
@@ -36,31 +34,24 @@ function GymRow({ gym }: { gym: Gym }) {
 }
 
 export default function GymsScreen() {
-  const theme = useTheme();
   const router = useRouter();
   const { data: gyms = [] } = useGyms();
   const seed = useSeedGyms();
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="largeTitle">Salles</Text>
-        <Pressable
-          onPress={() => router.push('/gym-edit')}
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter une salle"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: theme.radius.pill,
-            backgroundColor: theme.colors.accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="add" size={26} color={theme.colors.onAccent} />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        eyebrow="Matériel"
+        title="Salles"
+        right={
+          <IconButton
+            name="add"
+            tone="accent"
+            accessibilityLabel="Ajouter une salle"
+            onPress={() => router.push('/gym-edit')}
+          />
+        }
+      />
 
       {gyms.length === 0 ? (
         <EmptyState

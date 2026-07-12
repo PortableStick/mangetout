@@ -89,6 +89,9 @@ export default function WorkoutDetailScreen() {
   return (
     <Screen>
       <Card>
+        <Text variant="label" color="accent">
+          Séance
+        </Text>
         <Text variant="largeTitle">{new Date(workout.at).toLocaleString('fr-FR')}</Text>
         {gymName ? (
           <Text variant="subhead" color="textSecondary">
@@ -103,7 +106,7 @@ export default function WorkoutDetailScreen() {
       </Card>
 
       <Card>
-        <Text variant="footnote" color="textTertiary">
+        <Text variant="label" color="textTertiary">
           Statut
         </Text>
         <SegmentedControl
