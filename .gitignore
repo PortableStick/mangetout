@@ -50,3 +50,6 @@ ios/
 # === Claude Code : on committe agents + settings.json + brief, on ignore le local ===
 .claude/settings.local.json
 .claude/**/*.local.*
+
+# Handoff design system (binaire, non versionné)
+Mangetout Design System-handoff.zip
