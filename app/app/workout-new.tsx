@@ -12,6 +12,8 @@ import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
 import { captureImage, useMachineVision } from '@/features/ai/vision';
 import { generateWorkout } from '@/features/workouts/generator';
+import type { MetricKey, MetricSetKey } from '@/features/workouts/metrics';
+import { SetInput } from '@/features/workouts/SetInput';
 import { MUSCLE_LABELS, type Equipment, type MuscleGroup, type WorkoutStatus } from '@/features/workouts/types';
 import {
   toMuscleGroups,
@@ -22,7 +24,6 @@ import {
 } from '@/features/workouts/useWorkouts';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const numOf = (s: string) => Number.parseFloat(s.replace(',', '.')) || 0;
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Date locale du jour, format `YYYY-MM-DD`. */
@@ -55,12 +56,13 @@ const STATUS_OPTIONS: { label: string; value: WorkoutStatus }[] = [
 ];
 
 interface DraftSet {
-  reps: number;
-  weight_kg: number;
+  metricSet: MetricSetKey;
+  fields: Partial<Record<MetricKey, number | string>>;
 }
 interface DraftExercise {
   name: string;
   equipmentId?: string;
+  metricSet: MetricSetKey;
   sets: DraftSet[];
 }
 
@@ -106,23 +108,36 @@ export default function WorkoutNewScreen() {
 
   const generate = () => {
     const picked = generateWorkout(equipment, { targets, count: 6 });
-    setExercises(picked.map((e) => ({ name: e.name, equipmentId: e.id, sets: [{ reps: 10, weight_kg: 0 }] })));
+    setExercises(
+      picked.map((e) => ({
+        name: e.name,
+        equipmentId: e.id,
+        metricSet: e.metricSet ?? 'strength',
+        sets: [{ metricSet: e.metricSet ?? 'strength', fields: {} }],
+      }))
+    );
     setUsedGenerator(true);
   };
 
   const addFromEquipment = (e: Equipment) =>
-    setExercises((ex) => [...ex, { name: e.name, equipmentId: e.id, sets: [{ reps: 10, weight_kg: 0 }] }]);
+    setExercises((ex) => [
+      ...ex,
+      {
+        name: e.name,
+        equipmentId: e.id,
+        metricSet: e.metricSet ?? 'strength',
+        sets: [{ metricSet: e.metricSet ?? 'strength', fields: {} }],
+      },
+    ]);
 
   const addSet = (i: number) =>
     setExercises((ex) =>
-      ex.map((e, idx) => (idx === i ? { ...e, sets: [...e.sets, { reps: 10, weight_kg: 0 }] } : e))
+      ex.map((e, idx) => (idx === i ? { ...e, sets: [...e.sets, { metricSet: e.metricSet, fields: {} }] } : e))
     );
-  const setField = (i: number, s: number, field: keyof DraftSet, value: number) =>
+  const setSetFields = (i: number, s: number, fields: Partial<Record<MetricKey, number | string>>) =>
     setExercises((ex) =>
       ex.map((e, idx) =>
-        idx === i
-          ? { ...e, sets: e.sets.map((set, sIdx) => (sIdx === s ? { ...set, [field]: value } : set)) }
-          : e
+        idx === i ? { ...e, sets: e.sets.map((set, sIdx) => (sIdx === s ? { ...set, fields } : set)) } : e
       )
     );
   const removeExercise = (i: number) => setExercises((ex) => ex.filter((_, idx) => idx !== i));
@@ -206,28 +221,15 @@ export default function WorkoutNewScreen() {
             </Pressable>
           </View>
           {ex.sets.map((s, sIdx) => (
-            <View key={sIdx} style={{ flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' }}>
-              <Text variant="footnote" color="textTertiary" style={{ width: 20 }}>
+            <View key={sIdx} style={{ flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'flex-start' }}>
+              <Text variant="footnote" color="textTertiary" style={{ width: 20, marginTop: 8 }}>
                 {sIdx + 1}
               </Text>
-              <Field
-                value={String(s.reps)}
-                onChangeText={(v) => setField(i, sIdx, 'reps', Math.round(numOf(v)))}
-                keyboardType="numeric"
-                style={{ width: 64, paddingVertical: 8, textAlign: 'center' }}
+              <SetInput
+                metricSet={s.metricSet}
+                value={s.fields}
+                onChange={(fields) => setSetFields(i, sIdx, fields)}
               />
-              <Text variant="footnote" color="textTertiary">
-                reps ×
-              </Text>
-              <Field
-                value={String(s.weight_kg)}
-                onChangeText={(v) => setField(i, sIdx, 'weight_kg', numOf(v))}
-                keyboardType="numeric"
-                style={{ width: 74, paddingVertical: 8, textAlign: 'center' }}
-              />
-              <Text variant="footnote" color="textTertiary">
-                kg
-              </Text>
             </View>
           ))}
           <Pressable onPress={() => addSet(i)}>

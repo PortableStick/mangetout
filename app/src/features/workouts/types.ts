@@ -1,6 +1,6 @@
 /** Séances, salles et équipements. */
 
-import type { MetricSetKey } from './metrics';
+import type { MetricKey, MetricSetKey } from './metrics';
 
 export type GymType = 'chain' | 'home';
 
@@ -74,7 +74,9 @@ export interface Exercise {
 export interface ExerciseSet {
   id: string;
   exercise: string; // exercise id
-  reps: number;
-  weight_kg: number;
+  /** Preset de champs (défaut rétro-compat : 'strength'). */
+  metricSet: MetricSetKey;
+  /** Valeurs saisies, une par `MetricField` du preset. */
+  fields: Partial<Record<MetricKey, number | string>>;
   position: number;
 }

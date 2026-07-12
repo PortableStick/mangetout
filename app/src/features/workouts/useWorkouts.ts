@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/AuthContext';
 
-import type { MetricSetKey } from './metrics';
+import type { MetricKey, MetricSetKey } from './metrics';
 import {
   addEquipment,
   addGym,
@@ -272,7 +272,8 @@ export function useUpdateSet() {
     mutationFn: (input: {
       id: string;
       exercise: string;
-      fields: Record<string, number | string>;
+      fields: Partial<Record<MetricKey, number | string>>;
+      metricSet?: MetricSetKey;
       position?: number;
       workoutId: string;
     }) =>
@@ -280,6 +281,7 @@ export function useUpdateSet() {
         id: input.id,
         exercise: input.exercise,
         fields: input.fields,
+        metricSet: input.metricSet,
         position: input.position,
         userId: user?.id ?? '',
       }),

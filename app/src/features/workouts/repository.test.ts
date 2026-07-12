@@ -23,6 +23,7 @@ import {
   deleteWorkout,
   duplicateWorkout,
   listEquipment,
+  listSets,
   listWorkouts,
   removeEquipment,
   updateEquipment,
@@ -340,7 +341,7 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
     );
   });
 
-  it('updateSet enfile un upsert sets avec les champs fournis mergés au record existant', async () => {
+  it('updateSet enfile un upsert sets avec les champs fournis mergés au record existant (legacy → fields)', async () => {
     mockAll.mockReturnValue([
       { id: 's1', payload: { exercise: 'e1', reps: 10, weight_kg: 50, position: 0 } },
     ]);
@@ -353,13 +354,76 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
       expect.objectContaining({
         id: 's1',
         exercise: 'e1',
-        reps: 12,
-        weight_kg: 50,
+        metricSet: 'strength',
+        fields: { reps: 12, weight_kg: 50 },
         position: 0,
         user: 'u1',
         deleted: false,
       })
     );
+  });
+
+  it('updateSet accepte un `metricSet` explicite et le persiste', async () => {
+    mockAll.mockReturnValue([
+      {
+        id: 's1',
+        payload: { exercise: 'e1', metricSet: 'cardio_row', fields: { duration_s: 1200 }, position: 0 },
+      },
+    ]);
+
+    await updateSet({
+      id: 's1',
+      exercise: 'e1',
+      fields: { distance_m: 5000 },
+      metricSet: 'cardio_row',
+      userId: 'u1',
+    });
+
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'sets',
+      'upsert',
+      expect.objectContaining({
+        id: 's1',
+        exercise: 'e1',
+        metricSet: 'cardio_row',
+        fields: { duration_s: 1200, distance_m: 5000 },
+        position: 0,
+        user: 'u1',
+        deleted: false,
+      })
+    );
+  });
+
+  it('listSets mappe un enregistrement legacy `{reps, weight_kg}` (sans `fields`) vers metricSet strength', () => {
+    mockAll.mockReturnValue([
+      { id: 's1', payload: { exercise: 'e1', reps: 10, weight_kg: 80, position: 0 } },
+    ]);
+
+    const [s] = listSets('e1');
+
+    expect(s).toMatchObject({
+      id: 's1',
+      exercise: 'e1',
+      metricSet: 'strength',
+      fields: { reps: 10, weight_kg: 80 },
+    });
+  });
+
+  it('listSets préserve `metricSet` + `fields` déjà typés', () => {
+    mockAll.mockReturnValue([
+      {
+        id: 's1',
+        payload: { exercise: 'e1', metricSet: 'cardio_row', fields: { duration_s: 1200, distance_m: 5000 }, position: 0 },
+      },
+    ]);
+
+    const [s] = listSets('e1');
+
+    expect(s).toMatchObject({
+      id: 's1',
+      metricSet: 'cardio_row',
+      fields: { duration_s: 1200, distance_m: 5000 },
+    });
   });
 
   it('deleteSet enfile un soft-delete sets', async () => {
@@ -380,7 +444,9 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
       at: '2026-01-01T09:30:00.000Z',
       status: 'planned',
       source: 'generated',
-      exercises: [{ name: 'Squat', equipmentId: 'eq1', sets: [{ reps: 10, weight_kg: 50 }] }],
+      exercises: [
+        { name: 'Squat', equipmentId: 'eq1', sets: [{ metricSet: 'strength', fields: { reps: 10, weight_kg: 50 } }] },
+      ],
       userId: 'u1',
     });
 
@@ -407,7 +473,41 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
     expect(mockEnqueue).toHaveBeenCalledWith(
       'sets',
       'upsert',
-      expect.objectContaining({ id: 's1', exercise: 'e1', reps: 10, weight_kg: 50, user: 'u1' })
+      expect.objectContaining({
+        id: 's1',
+        exercise: 'e1',
+        metricSet: 'strength',
+        fields: { reps: 10, weight_kg: 50 },
+        user: 'u1',
+      })
+    );
+  });
+
+  it('createWorkout avec une série `metric_set` non-strength (cardio) upserte metricSet + fields', async () => {
+    mockNewId.mockReturnValueOnce('w9').mockReturnValueOnce('e9').mockReturnValueOnce('s9');
+
+    await createWorkout({
+      gymId: 'g1',
+      exercises: [
+        {
+          name: 'Rameur',
+          equipmentId: 'eq-rameur',
+          sets: [{ metricSet: 'cardio_row', fields: { duration_s: 1200, distance_m: 5000 } }],
+        },
+      ],
+      userId: 'u1',
+    });
+
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'sets',
+      'upsert',
+      expect.objectContaining({
+        id: 's9',
+        exercise: 'e9',
+        metricSet: 'cardio_row',
+        fields: { duration_s: 1200, distance_m: 5000 },
+        user: 'u1',
+      })
     );
   });
 
@@ -489,7 +589,13 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
     expect(mockEnqueue).toHaveBeenCalledWith(
       'sets',
       'upsert',
-      expect.objectContaining({ id: 's2', exercise: 'e2', reps: 10, weight_kg: 50, user: 'u1' })
+      expect.objectContaining({
+        id: 's2',
+        exercise: 'e2',
+        metricSet: 'strength',
+        fields: { reps: 10, weight_kg: 50 },
+        user: 'u1',
+      })
     );
   });
 });

@@ -29,10 +29,15 @@ const SANITY: Record<string, z.ZodType> = {
     carbs_100g: num.min(0).max(100),
     fat_100g: num.min(0).max(100),
   }),
-  sets: z.object({
-    reps: num.min(0).max(1000),
-    weight_kg: num.min(0).max(1000),
-  }),
+  // Séries : format legacy `{ reps, weight_kg }` à plat, OU format typé par `metric_set`
+  // (`{ metricSet, fields }`, Task 18.3) — les bornes fines par champ sont validées côté
+  // saisie (`features/workouts/metrics.ts#setSchema`) ; ici on ne garde qu'un filet générique.
+  sets: z.union([
+    z.object({ reps: num.min(0).max(1000), weight_kg: num.min(0).max(1000) }).passthrough(),
+    z
+      .object({ metricSet: z.string().min(1), fields: z.record(z.string(), z.union([num, z.string()])) })
+      .passthrough(),
+  ]),
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

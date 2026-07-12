@@ -1,16 +1,17 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Field } from '@/components/ui/Field';
 import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
+import { fieldsFor } from '@/features/workouts/metrics';
+import { SetInput } from '@/features/workouts/SetInput';
 import type { Exercise, ExerciseSet, WorkoutSource, WorkoutStatus } from '@/features/workouts/types';
 import {
   useDeleteExercise,
@@ -23,8 +24,6 @@ import {
   useWorkoutDetail,
 } from '@/features/workouts/useWorkouts';
 import { useTheme } from '@/theme/ThemeProvider';
-
-const numOf = (s: string) => Number.parseFloat(s.replace(',', '.')) || 0;
 
 const STATUS_OPTIONS: { label: string; value: WorkoutStatus }[] = [
   { label: 'Planifiée', value: 'planned' },
@@ -211,47 +210,55 @@ function SetRow({
   const updateSet = useUpdateSet();
   const deleteSet = useDeleteSet();
 
-  const [reps, setReps] = useState(String(set.reps));
-  const [weight, setWeight] = useState(String(set.weight_kg));
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(set.fields);
 
-  const commitReps = () => {
-    const value = Math.round(numOf(reps));
-    if (value !== set.reps) {
-      updateSet.mutate({ id: set.id, exercise: exerciseId, fields: { reps: value }, workoutId });
-    }
-  };
-  const commitWeight = () => {
-    const value = numOf(weight);
-    if (value !== set.weight_kg) {
-      updateSet.mutate({ id: set.id, exercise: exerciseId, fields: { weight_kg: value }, workoutId });
-    }
+  const summary =
+    fieldsFor(set.metricSet)
+      .map((field) => {
+        const value = set.fields[field.key];
+        if (value === undefined || value === '') return null;
+        return field.unit ? `${value} ${field.unit}` : `${value}`;
+      })
+      .filter((s): s is string => s !== null)
+      .join(' · ') || '—';
+
+  const commit = () => {
+    updateSet.mutate({ id: set.id, exercise: exerciseId, fields: draft, metricSet: set.metricSet, workoutId });
+    setEditing(false);
   };
 
   return (
-    <View style={{ flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' }}>
-      <Text variant="footnote" color="textTertiary" style={{ width: 20 }}>
+    <View style={{ flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'flex-start' }}>
+      <Text variant="footnote" color="textTertiary" style={{ width: 20, marginTop: 8 }}>
         {index + 1}
       </Text>
-      <Field
-        value={reps}
-        onChangeText={setReps}
-        onBlur={commitReps}
-        keyboardType="numeric"
-        style={{ width: 64, paddingVertical: 8, textAlign: 'center' }}
-      />
-      <Text variant="footnote" color="textTertiary">
-        reps ×
-      </Text>
-      <Field
-        value={weight}
-        onChangeText={setWeight}
-        onBlur={commitWeight}
-        keyboardType="numeric"
-        style={{ width: 74, paddingVertical: 8, textAlign: 'center' }}
-      />
-      <Text variant="footnote" color="textTertiary" style={{ flex: 1 }}>
-        kg
-      </Text>
+      {editing ? (
+        <View style={{ flex: 1, gap: theme.spacing.sm }}>
+          <SetInput metricSet={set.metricSet} value={draft} onChange={setDraft} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => {
+            setDraft(set.fields);
+            setEditing(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Modifier la série ${index + 1}`}
+          style={{ flex: 1, justifyContent: 'center' }}
+        >
+          <Text>{summary}</Text>
+        </Pressable>
+      )}
+      {editing ? (
+        <IconButton
+          name="checkmark-circle-outline"
+          tone="accent"
+          size={32}
+          accessibilityLabel={`Valider la série ${index + 1}`}
+          onPress={commit}
+        />
+      ) : null}
       <IconButton
         name="trash-outline"
         tone="danger"

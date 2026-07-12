@@ -6,7 +6,7 @@ import { newId } from '@/lib/id';
 import { getSyncManager } from '@/sync/manager';
 
 import { BASIC_FIT_EQUIPMENT, DEFAULT_GYMS } from './equipmentSeed';
-import type { MetricSetKey } from './metrics';
+import type { MetricKey, MetricSetKey } from './metrics';
 import type {
   Equipment,
   EquipmentCategory,
@@ -194,7 +194,10 @@ export interface WorkoutDraft {
   exercises: {
     name: string;
     equipmentId?: string;
-    sets: { reps: number; weight_kg: number }[];
+    sets: {
+      metricSet: MetricSetKey;
+      fields: Partial<Record<MetricKey, number | string>>;
+    }[];
   }[];
   userId: string;
 }
@@ -238,8 +241,8 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
       await mgr.enqueue('sets', 'upsert', {
         id: newId(),
         exercise: exerciseId,
-        reps: set.reps,
-        weight_kg: set.weight_kg,
+        metricSet: set.metricSet,
+        fields: set.fields,
         position: s,
         ...base,
       });
@@ -276,9 +279,31 @@ export function listExercises(workoutId: string): Exercise[] {
     .sort((a, b) => a.position - b.position);
 }
 
+/** Mappe un record brut vers `ExerciseSet`, avec rétro-compat : anciens enregistrements
+ * `{ reps, weight_kg }` (sans `fields`) → `{ metricSet: 'strength', fields: { reps, weight_kg } }`. */
+function mapSet(r: { id: string; payload: unknown }): ExerciseSet {
+  const p = (r.payload ?? {}) as Record<string, unknown>;
+  if (p.fields && typeof p.fields === 'object') {
+    return {
+      id: r.id,
+      exercise: p.exercise as string,
+      position: (p.position as number) ?? 0,
+      metricSet: (p.metricSet as MetricSetKey | undefined) ?? 'strength',
+      fields: p.fields as Partial<Record<MetricKey, number | string>>,
+    };
+  }
+  const { reps, weight_kg, ...rest } = p;
+  return {
+    id: r.id,
+    ...rest,
+    metricSet: 'strength',
+    fields: { reps: reps as number, weight_kg: weight_kg as number },
+  } as unknown as ExerciseSet;
+}
+
 export function listSets(exerciseId: string): ExerciseSet[] {
   return rows('sets')
-    .map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as ExerciseSet)
+    .map(mapSet)
     .filter((s) => s.exercise === exerciseId)
     .sort((a, b) => a.position - b.position);
 }
@@ -331,8 +356,8 @@ export async function deleteWorkout(input: { id: string; userId: string }): Prom
       await mgr.enqueue('sets', 'upsert', {
         id: set.id,
         exercise: set.exercise,
-        reps: set.reps,
-        weight_kg: set.weight_kg,
+        metricSet: set.metricSet,
+        fields: set.fields,
         position: set.position,
         ...base,
       });
@@ -376,19 +401,20 @@ export async function deleteExercise(input: { id: string; userId: string }): Pro
     await mgr.enqueue('sets', 'upsert', {
       id: set.id,
       exercise: set.exercise,
-      reps: set.reps,
-      weight_kg: set.weight_kg,
+      metricSet: set.metricSet,
+      fields: set.fields,
       position: set.position,
       ...base,
     });
   }
 }
 
-/** Met à jour une série : merge `fields` (ex. reps/weight_kg) avec le record existant. */
+/** Met à jour une série : merge `fields` (et `metricSet` si fourni) avec le record existant. */
 export async function updateSet(input: {
   id: string;
   exercise: string;
-  fields: Record<string, number | string>;
+  fields: Partial<Record<MetricKey, number | string>>;
+  metricSet?: MetricSetKey;
   position?: number;
   userId: string;
 }): Promise<void> {
@@ -396,10 +422,9 @@ export async function updateSet(input: {
   await getSyncManager().enqueue('sets', 'upsert', {
     id: input.id,
     exercise: input.exercise,
-    reps: current?.reps,
-    weight_kg: current?.weight_kg,
+    metricSet: input.metricSet ?? current?.metricSet ?? 'strength',
+    fields: { ...current?.fields, ...input.fields },
     position: input.position ?? current?.position ?? 0,
-    ...input.fields,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
@@ -456,8 +481,8 @@ export async function duplicateWorkout(input: {
       await mgr.enqueue('sets', 'upsert', {
         id: newId(),
         exercise: newExerciseId,
-        reps: set.reps,
-        weight_kg: set.weight_kg,
+        metricSet: set.metricSet,
+        fields: set.fields,
         position: set.position,
         ...base,
       });
