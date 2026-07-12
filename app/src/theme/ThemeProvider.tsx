@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { loadThemeMode, saveThemeMode, type ThemeMode } from './themeMode';
 import {
   palettes,
   radius,
@@ -11,8 +12,12 @@ import {
   type Palette,
 } from './tokens';
 
+export type { ThemeMode } from './themeMode';
+
 export interface Theme {
   scheme: ColorScheme;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
   colors: Palette;
   spacing: typeof spacing;
   radius: typeof radius;
@@ -24,18 +29,37 @@ const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const scheme: ColorScheme = system === 'dark' ? 'dark' : 'light';
+  const [mode, setModeState] = useState<ThemeMode>('system');
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadThemeMode().then((stored) => {
+      if (!cancelled) setModeState(stored);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const scheme: ColorScheme = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
+
+  const setMode = (m: ThemeMode) => {
+    setModeState(m);
+    void saveThemeMode(m);
+  };
 
   const theme = useMemo<Theme>(
     () => ({
       scheme,
+      mode,
+      setMode,
       colors: palettes[scheme],
       spacing,
       radius,
       typography,
       shadow: (level) => shadow(scheme, level),
     }),
-    [scheme]
+    [scheme, mode]
   );
 
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
