@@ -1,6 +1,7 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AppState, PixelRatio, StyleSheet, View } from 'react-native';
 import * as THREE from 'three';
 
 /**
@@ -10,9 +11,8 @@ import * as THREE from 'three';
  * chorégraphies (`EX.*`, `tempoPhase`, `solveLeg`) sont des maths pures portées telles quelles ;
  * seul le rendu change (DOM/UMD web → `GLView` expo-gl + boucle `requestAnimationFrame`).
  *
- * Cleanup : le rig est démonté (RAF annulé + `renderer.dispose()` + dispose géométries/matériaux)
- * via un `useEffect` de démontage — **pas** via la valeur de retour de `onContextCreate` (expo-gl ne
- * l'appelle jamais, voir `app/_poc-3d.tsx` sur `feat/coach-3d`).
+ * Cycle de vie GL (création renderer, boucle RAF, dispose, suspension focus/background) factorisé
+ * dans le hook partagé `useGlScene` (voir plus bas) — consommé par `CoachCore` et `MovementDemoView`.
  */
 
 const INK = 0x1a1c17;
@@ -529,22 +529,77 @@ function disposeScene(scene: THREE.Scene): void {
   });
 }
 
-export interface CoachCoreProps {
-  /** `thinking` accélère la rotation/respiration et teinte le rig en warn (analyse en cours). */
-  state?: 'brief' | 'thinking';
-  height?: number;
+export interface GlSceneHandle {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  /**
+   * Appelée à chaque frame active pour avancer l'anim (mutations three). Le rendu
+   * (`renderer.render` + `gl.endFrameEXP`) est fait par `useGlScene` — ne pas l'appeler ici.
+   */
+  update: () => void;
 }
 
-/** Mini-scène idle du coach (respiration + rotation lente) — hero du chat Coach. */
-export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
-  const stateRef = useRef(state);
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+interface ActiveGlScene extends GlSceneHandle {
+  renderer: THREE.WebGLRenderer;
+  gl: ExpoWebGLRenderingContext;
+}
 
+/**
+ * Cycle de vie GL partagé entre `CoachCore` et `MovementDemoView` (était dupliqué mot pour mot) :
+ * crée le renderer (shim `canvas` + `pixelRatio` plafonné), pilote la boucle
+ * `requestAnimationFrame` et dispose (renderer + géométries/matériaux) au démontage — **pas** via
+ * la valeur de retour de `onContextCreate` (expo-gl ne l'appelle jamais, voir `_poc-3d.tsx` sur
+ * `feat/coach-3d`).
+ *
+ * Suspend la boucle RAF (sans jamais recréer le contexte GL — seulement le RAF est arrêté/relancé)
+ * quand l'écran perd le focus (`useIsFocused` : la tab bar garde les écrans montés, donc sans ce
+ * garde-fou le rig continuerait de rendre à 60 fps en tâche de fond) OU que l'app passe en
+ * arrière-plan (`AppState`). Reprend au retour focus + foreground.
+ */
+function useGlScene(
+  build: (gl: ExpoWebGLRenderingContext) => GlSceneHandle
+): (gl: ExpoWebGLRenderingContext) => void {
+  const isFocused = useIsFocused();
+
+  const shouldRunRef = useRef(true);
   const rafRef = useRef<number | null>(null);
   const disposedRef = useRef(false);
+  const activeRef = useRef<ActiveGlScene | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+
+  /** (Re)lance le RAF si autorisé (focus + foreground) et pas déjà en cours ; l'arrête sinon. */
+  const sync = useCallback(() => {
+    if (disposedRef.current || !activeRef.current) return;
+    if (shouldRunRef.current) {
+      if (rafRef.current != null) return;
+      const loop = () => {
+        if (disposedRef.current) return;
+        rafRef.current = requestAnimationFrame(loop);
+        const active = activeRef.current;
+        if (!active) return;
+        active.update();
+        active.renderer.render(active.scene, active.camera);
+        active.gl.endFrameEXP();
+      };
+      loop();
+    } else if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    shouldRunRef.current = isFocused && AppState.currentState === 'active';
+    sync();
+  }, [isFocused, sync]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      shouldRunRef.current = isFocused && state === 'active';
+      sync();
+    });
+    return () => sub.remove();
+  }, [isFocused, sync]);
 
   // Cleanup réel du cycle de vie GL/three au démontage : expo-gl n'appelle jamais la valeur de
   // retour de `onContextCreate` (ce n'est pas un hook React) — voir `_poc-3d.tsx` (feat/coach-3d).
@@ -558,23 +613,55 @@ export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
       }
       cleanupRef.current?.();
       cleanupRef.current = null;
+      activeRef.current = null;
     };
   }, []);
 
-  const onContextCreate = useCallback((gl: ExpoWebGLRenderingContext) => {
+  return useCallback(
+    (gl: ExpoWebGLRenderingContext) => {
+      const width = gl.drawingBufferWidth;
+      const glHeight = gl.drawingBufferHeight;
+      const renderer = new THREE.WebGLRenderer({
+        canvas: makeCanvas(gl, width, glHeight),
+        // expo-gl fournit un contexte WebGL2 ; three attend WebGLRenderingContext dans ses types —
+        // cast nécessaire, pattern documenté expo-three (identique à `_poc-3d.tsx`).
+        context: gl as unknown as WebGLRenderingContext,
+        antialias: false, // géométrie low-poly anguleuse : le liseré volt (EdgesGeometry) suffit
+      });
+      renderer.setPixelRatio(Math.min(PixelRatio.get(), 2));
+      renderer.setSize(width, glHeight);
+      renderer.setClearColor(INK, 1);
+
+      const handle = build(gl);
+      activeRef.current = { ...handle, renderer, gl };
+      cleanupRef.current = () => {
+        renderer.dispose();
+        disposeScene(handle.scene);
+      };
+      sync();
+    },
+    [build, sync]
+  );
+}
+
+export interface CoachCoreProps {
+  /** `thinking` accélère la rotation/respiration et teinte le rig en warn (analyse en cours). */
+  state?: 'brief' | 'thinking';
+  height?: number;
+}
+
+/** Mini-scène idle du coach (respiration + rotation lente) — hero du chat Coach. */
+export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const build = useCallback((gl: ExpoWebGLRenderingContext): GlSceneHandle => {
     const width = gl.drawingBufferWidth;
     const glHeight = gl.drawingBufferHeight;
     const mats = createMats();
     const { scene, camera, rim } = createEnvironment(width, glHeight, [2.4, 1.2, 5.4], 0.4);
-    // expo-gl fournit un contexte WebGL2 ; three attend WebGLRenderingContext dans ses types — cast
-    // nécessaire, pattern documenté expo-three (identique à `_poc-3d.tsx`).
-    const renderer = new THREE.WebGLRenderer({
-      canvas: makeCanvas(gl, width, glHeight),
-      context: gl as unknown as WebGLRenderingContext,
-      antialias: true,
-    });
-    renderer.setSize(width, glHeight);
-    renderer.setClearColor(INK, 1);
 
     const { fig, data } = buildCoach(mats);
     fig.position.y = 0.12;
@@ -582,9 +669,7 @@ export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
     scene.add(fig);
 
     let t = 0;
-    const loop = () => {
-      if (disposedRef.current) return;
-      rafRef.current = requestAnimationFrame(loop);
+    const update = () => {
       t += 0.016;
       const thinking = stateRef.current === 'thinking';
       fig.rotation.y = Math.sin(t * 0.5 * (thinking ? 2 : 1)) * (thinking ? 0.5 : 0.3);
@@ -597,16 +682,12 @@ export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
       mats.edge.color.set(tint);
       mats.accent.color.set(tint);
       rim.color.set(tint);
-      renderer.render(scene, camera);
-      gl.endFrameEXP();
     };
-    loop();
 
-    cleanupRef.current = () => {
-      renderer.dispose();
-      disposeScene(scene);
-    };
+    return { scene, camera, update };
   }, []);
+
+  const onContextCreate = useGlScene(build);
 
   return (
     <View style={{ width: '100%', height }}>
@@ -629,25 +710,8 @@ interface MovementDemoViewProps {
 
 /** Scène montrant la machine + l'athlète exécutant le mouvement, pilotée par le tempo. */
 function MovementDemoView({ exercise, tempo, height }: MovementDemoViewProps) {
-  const rafRef = useRef<number | null>(null);
-  const disposedRef = useRef(false);
-  const cleanupRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    disposedRef.current = false;
-    return () => {
-      disposedRef.current = true;
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      cleanupRef.current?.();
-      cleanupRef.current = null;
-    };
-  }, []);
-
-  const onContextCreate = useCallback(
-    (gl: ExpoWebGLRenderingContext) => {
+  const build = useCallback(
+    (gl: ExpoWebGLRenderingContext): GlSceneHandle => {
       const width = gl.drawingBufferWidth;
       const glHeight = gl.drawingBufferHeight;
       const mats = createMats();
@@ -660,13 +724,6 @@ function MovementDemoView({ exercise, tempo, height }: MovementDemoViewProps) {
         seated ? [3.9, 1.0, 5.9] : [3.4, 1.3, 5.4],
         seated ? -0.2 : 0.3
       );
-      const renderer = new THREE.WebGLRenderer({
-        canvas: makeCanvas(gl, width, glHeight),
-        context: gl as unknown as WebGLRenderingContext,
-        antialias: true,
-      });
-      renderer.setSize(width, glHeight);
-      renderer.setClearColor(INK, 1);
 
       const { fig, data } = buildCoach(mats);
       fig.scale.setScalar(0.9);
@@ -692,25 +749,19 @@ function MovementDemoView({ exercise, tempo, height }: MovementDemoViewProps) {
       ex.setup(mats, data);
 
       let t = 0;
-      const loop = () => {
-        if (disposedRef.current) return;
-        rafRef.current = requestAnimationFrame(loop);
+      const update = () => {
         t += 0.016;
         const p = tempoPhase(t, activeTempo);
         ex.update(p, data, mach, ex.figZ ? fig : null);
         rig.rotation.y = Math.sin(t * 0.25) * 0.28; // léger tourniquet de présentation
-        renderer.render(scene, camera);
-        gl.endFrameEXP();
       };
-      loop();
 
-      cleanupRef.current = () => {
-        renderer.dispose();
-        disposeScene(scene);
-      };
+      return { scene, camera, update };
     },
     [exercise, tempo]
   );
+
+  const onContextCreate = useGlScene(build);
 
   return (
     <View style={{ width: '100%', height }}>
