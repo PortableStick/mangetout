@@ -109,6 +109,7 @@ export default function MovesScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
         contentContainerStyle={{ gap: theme.spacing.sm }}
       >
         {MOVES.map((m) => (
