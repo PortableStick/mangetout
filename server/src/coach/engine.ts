@@ -39,6 +39,8 @@ export function proposalSummary(tool: string, args: Record<string, unknown>): st
       return `Supprimer une salle et son équipement.`;
     case 'add_equipment':
       return `Ajouter l'équipement « ${args.name} » à une salle.`;
+    case 'update_equipment':
+      return `Modifier l'équipement${args.name ? ` « ${args.name} »` : ''}.`;
     case 'remove_equipment':
       return `Retirer un équipement d'une salle.`;
     default:
