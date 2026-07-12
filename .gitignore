@@ -53,3 +53,6 @@ ios/
 
 # Handoff design system (binaire, non versionnÃ©)
 Mangetout Design System-handoff.zip
+
+# Bugreports Android (jamais versionnés)
+bugreport-*.zip
