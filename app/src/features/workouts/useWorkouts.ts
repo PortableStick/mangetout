@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/AuthContext';
 
+import type { MetricSetKey } from './metrics';
 import {
   addEquipment,
   addGym,
@@ -83,6 +84,7 @@ export function useAddEquipment() {
       name: string;
       category: Equipment['category'];
       muscleGroups: MuscleGroup[];
+      metricSet: MetricSetKey;
     }) => addEquipment({ ...input, userId: user?.id ?? '' }),
     onSuccess: (_res, vars) => {
       void qc.invalidateQueries({ queryKey: ['equipment', vars.gymId] });
@@ -136,6 +138,7 @@ export function useUpdateEquipment() {
       name: string;
       category: Equipment['category'];
       muscleGroups: MuscleGroup[];
+      metricSet: MetricSetKey;
     }) => updateEquipment({ ...input, userId: user?.id ?? '' }),
     onSuccess: (_res, vars) => {
       void qc.invalidateQueries({ queryKey: ['equipment', vars.gymId] });

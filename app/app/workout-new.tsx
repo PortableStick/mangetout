@@ -88,6 +88,7 @@ export default function WorkoutNewScreen() {
       name: res.canonical_name,
       category: 'machine',
       muscleGroups: toMuscleGroups(res.muscle_groups),
+      metricSet: 'strength',
     });
   }
 

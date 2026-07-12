@@ -9,6 +9,7 @@ const eq = (id: string, muscleGroups: Equipment['muscleGroups']): Equipment => (
   name: id,
   category: 'machine',
   muscleGroups,
+  metricSet: 'strength',
 });
 
 const gym: Equipment[] = [

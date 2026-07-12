@@ -6,6 +6,7 @@ import { newId } from '@/lib/id';
 import { getSyncManager } from '@/sync/manager';
 
 import { BASIC_FIT_EQUIPMENT, DEFAULT_GYMS } from './equipmentSeed';
+import type { MetricSetKey } from './metrics';
 import type {
   Equipment,
   EquipmentCategory,
@@ -34,9 +35,20 @@ export function listGyms(): Gym[] {
   });
 }
 
+/** Mappe un record brut vers `Equipment`, avec défaut rétro-compatible `metricSet: 'strength'`
+ * pour les anciens enregistrements créés avant Task 18.2. */
+function mapEquipment(r: { id: string; payload: unknown }): Equipment {
+  const p = (r.payload ?? {}) as Record<string, unknown>;
+  return {
+    id: r.id,
+    ...p,
+    metricSet: (p.metricSet as MetricSetKey | undefined) ?? 'strength',
+  } as unknown as Equipment;
+}
+
 export function listEquipment(gymId: string): Equipment[] {
   return rows('equipment')
-    .map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as Equipment)
+    .map(mapEquipment)
     .filter((e) => e.gym === gymId);
 }
 
@@ -59,6 +71,7 @@ export async function seedDefaultGyms(userId: string): Promise<void> {
       name: e.name,
       category: e.category,
       muscleGroups: e.muscleGroups,
+      metricSet: e.metricSet ?? 'strength',
       ...base,
     });
   }
@@ -69,6 +82,7 @@ export async function addEquipment(input: {
   name: string;
   category: Equipment['category'];
   muscleGroups: Equipment['muscleGroups'];
+  metricSet: MetricSetKey;
   userId: string;
 }): Promise<void> {
   await getSyncManager().enqueue('equipment', 'upsert', {
@@ -77,6 +91,7 @@ export async function addEquipment(input: {
     name: input.name,
     category: input.category,
     muscleGroups: input.muscleGroups,
+    metricSet: input.metricSet,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
@@ -127,6 +142,7 @@ export async function deleteGym(input: { id: string; userId: string }): Promise<
       name: equipment.name,
       category: equipment.category,
       muscleGroups: equipment.muscleGroups,
+      metricSet: equipment.metricSet,
       ...base,
     });
   }
@@ -138,6 +154,7 @@ export async function updateEquipment(input: {
   name: string;
   category: EquipmentCategory;
   muscleGroups: MuscleGroup[];
+  metricSet: MetricSetKey;
   userId: string;
 }): Promise<void> {
   await getSyncManager().enqueue('equipment', 'upsert', {
@@ -146,6 +163,7 @@ export async function updateEquipment(input: {
     name: input.name,
     category: input.category,
     muscleGroups: input.muscleGroups,
+    metricSet: input.metricSet,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,

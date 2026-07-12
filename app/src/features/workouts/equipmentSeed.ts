@@ -1,3 +1,4 @@
+import type { MetricSetKey } from './metrics';
 import type { EquipmentCategory, MuscleGroup } from './types';
 
 /** Modèle d'équipement seedé (sans id/gym, ajoutés à la création). */
@@ -5,6 +6,8 @@ export interface EquipmentSeed {
   name: string;
   category: EquipmentCategory;
   muscleGroups: MuscleGroup[];
+  /** Défaut rétro-compat au mapping repository si omis : 'strength'. */
+  metricSet?: MetricSetKey;
 }
 
 /**
@@ -39,11 +42,16 @@ export const BASIC_FIT_EQUIPMENT: EquipmentSeed[] = [
   { name: 'Poulies / functional trainer', category: 'free_weight', muscleGroups: ['back', 'chest', 'shoulders', 'biceps', 'triceps'] },
   { name: 'Kettlebells', category: 'free_weight', muscleGroups: ['fullbody', 'glutes'] },
   // Cardio (Matrix)
-  { name: 'Tapis de course', category: 'cardio', muscleGroups: ['cardio'] },
-  { name: 'Vélo (droit + couché)', category: 'cardio', muscleGroups: ['cardio', 'legs'] },
-  { name: 'Vélo elliptique', category: 'cardio', muscleGroups: ['cardio', 'fullbody'] },
-  { name: 'Rameur', category: 'cardio', muscleGroups: ['cardio', 'back', 'legs'] },
-  { name: 'Stepper / monte-escaliers', category: 'cardio', muscleGroups: ['cardio', 'legs', 'glutes'] },
+  { name: 'Tapis de course', category: 'cardio', muscleGroups: ['cardio'], metricSet: 'cardio_run' },
+  { name: 'Vélo (droit + couché)', category: 'cardio', muscleGroups: ['cardio', 'legs'], metricSet: 'cardio_bike' },
+  { name: 'Vélo elliptique', category: 'cardio', muscleGroups: ['cardio', 'fullbody'], metricSet: 'cardio_generic' },
+  { name: 'Rameur', category: 'cardio', muscleGroups: ['cardio', 'back', 'legs'], metricSet: 'cardio_row' },
+  {
+    name: 'Stepper / monte-escaliers',
+    category: 'cardio',
+    muscleGroups: ['cardio', 'legs', 'glutes'],
+    metricSet: 'cardio_generic',
+  },
   // Fonctionnel
   { name: 'Medecine ball', category: 'functional', muscleGroups: ['abs', 'fullbody'] },
   { name: 'Swiss ball', category: 'functional', muscleGroups: ['abs'] },

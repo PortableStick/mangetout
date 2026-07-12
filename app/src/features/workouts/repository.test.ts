@@ -14,6 +14,7 @@ const mockNewId = jest.fn<() => string>();
 jest.mock('@/lib/id', () => ({ newId: () => mockNewId() }));
 
 import {
+  addEquipment,
   addGym,
   createWorkout,
   deleteExercise,
@@ -21,6 +22,7 @@ import {
   deleteSet,
   deleteWorkout,
   duplicateWorkout,
+  listEquipment,
   listWorkouts,
   removeEquipment,
   updateEquipment,
@@ -112,13 +114,14 @@ describe('repository — CRUD salles & équipement', () => {
     );
   });
 
-  it('updateEquipment enfile un upsert equipment avec l’id fourni', async () => {
+  it('updateEquipment enfile un upsert equipment avec l’id fourni et le metricSet', async () => {
     await updateEquipment({
       id: 'e5',
       gymId: 'g1',
       name: 'Rameur',
       category: 'cardio',
       muscleGroups: ['cardio'],
+      metricSet: 'cardio_row',
       userId: 'u1',
     });
 
@@ -131,10 +134,62 @@ describe('repository — CRUD salles & équipement', () => {
         name: 'Rameur',
         category: 'cardio',
         muscleGroups: ['cardio'],
+        metricSet: 'cardio_row',
         user: 'u1',
         deleted: false,
       })
     );
+  });
+
+  it('addEquipment enfile un upsert equipment avec le metricSet fourni', async () => {
+    mockNewId.mockReturnValue('e6');
+
+    await addEquipment({
+      gymId: 'g1',
+      name: 'Presse à cuisses',
+      category: 'machine',
+      muscleGroups: ['legs'],
+      metricSet: 'strength',
+      userId: 'u1',
+    });
+
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'equipment',
+      'upsert',
+      expect.objectContaining({
+        id: 'e6',
+        gym: 'g1',
+        name: 'Presse à cuisses',
+        category: 'machine',
+        muscleGroups: ['legs'],
+        metricSet: 'strength',
+        user: 'u1',
+        deleted: false,
+      })
+    );
+  });
+
+  it('listEquipment mappe un équipement legacy sans metricSet vers le défaut strength', () => {
+    mockAll.mockReturnValue([
+      { id: 'e7', payload: { gym: 'g1', name: 'Vieux banc', category: 'free_weight', muscleGroups: [] } },
+    ]);
+
+    const [e] = listEquipment('g1');
+
+    expect(e).toMatchObject({ id: 'e7', name: 'Vieux banc', metricSet: 'strength' });
+  });
+
+  it('listEquipment préserve le metricSet persisté', () => {
+    mockAll.mockReturnValue([
+      {
+        id: 'e8',
+        payload: { gym: 'g1', name: 'Rameur', category: 'cardio', muscleGroups: ['cardio'], metricSet: 'cardio_row' },
+      },
+    ]);
+
+    const [e] = listEquipment('g1');
+
+    expect(e).toMatchObject({ id: 'e8', metricSet: 'cardio_row' });
   });
 
   it('removeEquipment enfile un soft-delete equipment', async () => {

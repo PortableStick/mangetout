@@ -1,5 +1,7 @@
 /** Séances, salles et équipements. */
 
+import type { MetricSetKey } from './metrics';
+
 export type GymType = 'chain' | 'home';
 
 export type MuscleGroup =
@@ -43,6 +45,8 @@ export interface Equipment {
   name: string;
   category: EquipmentCategory;
   muscleGroups: MuscleGroup[];
+  /** Preset de champs de saisie de séries (défaut rétro-compat : 'strength'). */
+  metricSet: MetricSetKey;
 }
 
 export type WorkoutStatus = 'planned' | 'in_progress' | 'done';
