@@ -45,11 +45,17 @@ export interface Equipment {
   muscleGroups: MuscleGroup[];
 }
 
+export type WorkoutStatus = 'planned' | 'in_progress' | 'done';
+export type WorkoutSource = 'generated' | 'manual' | 'vision';
+
 export interface Workout {
   id: string;
-  date: string; // YYYY-MM-DD
+  at: string; // ISO datetime (source de vérité)
+  date: string; // YYYY-MM-DD dérivé de `at` (conservé pour compat/affichage)
   gym: string; // gym id
   notes?: string;
+  status: WorkoutStatus;
+  source: WorkoutSource;
 }
 
 export interface Exercise {
@@ -58,6 +64,7 @@ export interface Exercise {
   equipment?: string; // equipment id
   name: string;
   position: number;
+  source?: WorkoutSource; // provenance fine (optionnel)
 }
 
 export interface ExerciseSet {
