@@ -1,10 +1,10 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `chore/polish` (M11), prête à merger
-- Dernier milestone terminé : **11 — Dashboard + polish** — 🎉 **tous les milestones 0→11 terminés**
-- Prochain : durcissement post-déploiement (voir « À FAIRE humain ») — l'app compile, teste et passe expo-doctor ; reste le dev build device + déploiement homelab + secrets.
-- Total tests : **app 79 · serveur 28** (tsc + lint + expo-doctor 20/20 verts).
+- Branche active : `feat/gyms-and-polish` (M12→M15), prête à merger (gate --merge vert, revue finale Opus « PRÊT À MERGER »).
+- Dernier milestone terminé : **15 — Thème sélectionnable + refonte visuelle** (après M12 salles CRUD, M13 salles IA, M14 markdown coach).
+- Prochain : merge sur `main`, puis durcissement post-déploiement (voir « À FAIRE humain ») — dev build device + déploiement homelab + secrets.
+- Total tests : **app 99 · serveur 41** (tsc + lint verts ; gate.mjs --merge vert).
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -34,6 +34,12 @@
 
 - [x] M11 dashboard + polish : dashboard agrégé (kcal/macros du jour vs objectifs avec barres, tendance poids, activité, **streak** calculé), objectifs éditables (Réglages), **synchronisation** auto (montage + retour premier plan) + bouton manuel + statut hors-ligne, écran **À propos** (mention **ODbL** Open Food Facts + note confidentialité IA). **79 tests app** (streak ajouté).
 
+- [x] M12 salles CRUD manuel : repository `addGym/updateGym/deleteGym/updateEquipment/removeEquipment` (soft-delete + cascade équipement), hooks React Query, écran liste `/gyms` + éditeur `/gym-edit` (nom, type, équipement, suppression), points d'entrée Séances + Réglages. Tests repository (5) + cascade.
+- [x] M13 salles IA : outils coach action `add_gym/update_gym/delete_gym/add_equipment/remove_equipment`, `applyAction` route **create/update/delete** owner-scoped (`user` = utilisateur vérifié, PATCH sans `user`), ids validés `^[a-z0-9]{15}$` (**anti-injection de filtre PB**, revue sécurité), cascade delete_gym serveur, `proposalSummary` étendu, app déclenche `syncAll()` après apply. Tests serveur (owner-scoping, routage, anti-injection).
+- [x] M14 markdown coach : parseur pur `parseMarkdown` (gras/italique/code/listes/titres, robuste aux marqueurs non fermés, 7 tests) + composant `<Markdown>` (kit Text du thème) câblé dans les bulles assistant.
+- [x] M15a thème : `ThemeProvider` mode `système|clair|sombre` persisté (expo-secure-store), sélecteur d'apparence dans Réglages. Tests `themeMode` (5).
+- [x] M15b refonte visuelle : primitives partagés (`SegmentedControl/Badge/IconButton/ListRow/EmptyState` + helper `withAlpha`), refonte tokens (fonds chauds, ombres douces, variante `danger`+`onDanger` AA en dark, états pressés/focus), polish écrans salles (ListRow/Badge/IconButton).
+
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
 - [x] 1 Auth OIDC
@@ -47,6 +53,10 @@
 - [x] 9 IA vision (Gemini→DeepSeek)
 - [x] 10 Coach IA agentique
 - [x] 11 Dashboard + polish
+- [x] 12 Salles CRUD manuel
+- [x] 13 Salles IA (outils coach)
+- [x] 14 Markdown coach
+- [x] 15 Thème sélectionnable + refonte visuelle
 - [ ] 3 Food + barcode (OpenFoodFacts)
 - [ ] 4 Saisie manuelle + recettes
 - [ ] 5 Poids / mensurations
@@ -58,6 +68,7 @@
 - [ ] 11 Dashboard + polish
 
 ## Décisions
+- 2026-07-12 : chantier **M12→M15** (salles CRUD + salles IA + markdown coach + thème/refonte) mené en **subagent-driven** (Opus orchestre, agents Sonnet implémentent milestone par milestone, revue par tâche + revue finale Opus). Spec `docs/superpowers/specs/2026-07-12-*-design.md`, plan `docs/superpowers/plans/2026-07-12-*.md`. **Revue sécurité M13** : validation stricte du format d'`id` d'outil (`^[a-z0-9]{15}$`) fermant une injection de filtre PocketBase sur la cascade `delete_gym` (owner-scoping intact, pas d'escalade inter-user). **Revue finale** : bouton danger rebasculé sur la variante `danger` (contraste AA en dark). Dettes suivies (LOW) : cascade delete_gym IA silencieuse si listing échoue ; libellés a11y partiels ; `proposalSummary` salles générique.
 - 2026-07-07 : monorepo `app/` + `server/` + `infra/` (sépare bundle app / secrets serveur / infra). Proxy IA = sidecar Node dédié (testable, isole la clé) plutôt que hook Go PocketBase.
 - 2026-07-07 : versions vérifiées npm — Expo 57.0.4, RN 0.86.0, React 19.2.3, drizzle 0.45.2, zod 4, pocketbase-sdk 0.27.
 - 2026-07-07 : **PocketBase = 0.39.5**, construit depuis le binaire officiel GitHub (multi-arch). L'image `ghcr.io/pocketbase/pocketbase` du brief **n'existe pas** (vérifié) → Dockerfile maison.
