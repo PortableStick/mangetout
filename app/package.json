@@ -43,7 +43,7 @@
     "react-native-screens": "4.25.2",
     "react-native-sse": "^1.2.1",
     "react-native-svg": "15.15.4",
-    "three": "^0.185.1",
+    "three": "0.162.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -51,7 +51,7 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
-    "@types/three": "^0.185.1",
+    "@types/three": "0.162.0",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
