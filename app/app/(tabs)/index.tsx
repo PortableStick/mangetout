@@ -1,177 +1,229 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Screen } from '@/components/ui/Screen';
+import { StatCard } from '@/components/ui/StatCard';
 import { Text } from '@/components/ui/Text';
-import { useGoals } from '@/features/goals/useGoals';
-import { useHealthData } from '@/features/health/useHealthData';
-import { goalProgress, sumMacros } from '@/features/food/nutrition';
-import { today, useEntryDates, useFoodEntries } from '@/features/food/useFoodLog';
-import type { Reco } from '@/features/stats/coaching';
-import { computeStreak } from '@/features/stats/streak';
-import { RECO_LEVEL_LABEL, RECO_LEVEL_TONE, RECO_SOURCE_LABEL, useCoaching } from '@/features/stats/useCoaching';
-import { useWeightEntries } from '@/features/weight/useWeight';
-import { weightStats } from '@/features/weight/weight';
+import { today } from '@/features/food/useFoodLog';
+import { useCoaching } from '@/features/stats/useCoaching';
+import type { ExerciseSet } from '@/features/workouts/types';
+import { listExercises, listSets, listWorkouts } from '@/features/workouts/repository';
+import { useGyms, useWorkoutDetail, useWorkouts } from '@/features/workouts/useWorkouts';
 import { useTheme } from '@/theme/ThemeProvider';
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const WEEKDAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const MONTH_LABELS = [
+  'janv',
+  'févr',
+  'mars',
+  'avr',
+  'mai',
+  'juin',
+  'juil',
+  'août',
+  'sept',
+  'oct',
+  'nov',
+  'déc',
+];
+
+/** Numéro de semaine ISO 8601 (lundi = premier jour, semaine 1 = celle contenant le 4 janvier). */
+function isoWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // lundi = 0
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // jeudi de cette semaine ISO
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  return 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * MS_PER_DAY));
+}
+
+/** « Sam 12 juil · Semaine 04 » — calcul 100% local, sans dépendance de date. */
+function formatHeaderDate(date: Date): string {
+  const weekday = WEEKDAY_LABELS[date.getDay()];
+  const month = MONTH_LABELS[date.getMonth()];
+  const week = String(isoWeekNumber(date)).padStart(2, '0');
+  return `${weekday} ${date.getDate()} ${month} · Semaine ${week}`;
+}
+
+/** Résumé mono d'un exercice à partir de sa 1re série (représentative — l'app ne force pas des séries uniformes). */
+function exerciseSummary(sets: ExerciseSet[]): string {
+  if (sets.length === 0) return '—';
+  const first = sets[0]!;
+  const reps = first.fields.reps;
+  const weightKey =
+    first.metricSet === 'bodyweight'
+      ? 'added_weight_kg'
+      : first.metricSet === 'assisted'
+        ? 'assist_weight_kg'
+        : 'weight_kg';
+  const weight = first.fields[weightKey];
+  if (reps !== undefined && weight !== undefined) {
+    return `${sets.length}×${reps} · ${weight} kg`;
+  }
+  if (reps !== undefined) return `${sets.length}×${reps}`;
+  return `${sets.length} série${sets.length > 1 ? 's' : ''}`;
+}
+
+/** Volume hebdo simple (Σ reps × charge) des séries de séances `done` des 7 derniers jours. `undefined` si aucune donnée. */
+function useWeeklyVolumeKg() {
+  return useQuery({
+    queryKey: ['today-weekly-volume-kg'],
+    queryFn: async (): Promise<number | undefined> => {
+      const now = Date.now();
+      const workouts = listWorkouts().filter((w) => {
+        if (w.status !== 'done') return false;
+        const t = new Date(w.at).getTime();
+        return Number.isFinite(t) && t <= now && now - t <= 7 * MS_PER_DAY;
+      });
+
+      let total = 0;
+      let hasData = false;
+      for (const workout of workouts) {
+        for (const exercise of listExercises(workout.id)) {
+          for (const set of listSets(exercise.id)) {
+            const reps = Number(set.fields.reps);
+            const weight = Number(set.fields.weight_kg);
+            if (Number.isFinite(reps) && Number.isFinite(weight)) {
+              total += reps * weight;
+              hasData = true;
+            }
+          }
+        }
+      }
+      return hasData ? total : undefined;
+    },
+  });
+}
+
+/** Formate un nombre avec séparateur de milliers « espace » (ex. 24180 → « 24 180 »). */
+function formatThousands(n: number): string {
+  return Math.round(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 /**
- * Dashboard d'accueil (route par défaut). Agrège : kcal/macros du jour vs objectif,
- * tendance de poids, activité (Health Connect), streak.
+ * Écran d'accueil « Today » — copie fidèle du handoff design system (volt/ink/bone) :
+ * header, séance du jour, grille de stats, insight coach. Remplace l'ancien dashboard.
  */
-export default function DashboardScreen() {
+export default function TodayScreen() {
   const theme = useTheme();
   const router = useRouter();
   const date = today();
-  const { data: entries = [] } = useFoodEntries(date);
-  const { data: goals } = useGoals();
-  const { data: entryDates = [] } = useEntryDates();
-  const { data: weightEntries = [] } = useWeightEntries();
-  const weight = weightStats(weightEntries);
-  const health = useHealthData(date);
-  const coaching = useCoaching();
 
-  const total = sumMacros(entries);
-  const streak = computeStreak(entryDates, date);
+  const { data: workouts = [] } = useWorkouts();
+  const upcoming = workouts
+    .filter((w) => w.status !== 'done' && w.date >= date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const sessionWorkout = upcoming[0];
+
+  const { data: detail } = useWorkoutDetail(sessionWorkout?.id);
+  const exercises = detail?.exercises ?? [];
+  const { data: gyms = [] } = useGyms();
+  const gymName = gyms.find((g) => g.id === sessionWorkout?.gym)?.name;
+
+  const { data: weeklyVolumeKg } = useWeeklyVolumeKg();
+  const coaching = useCoaching();
+  const coachMessage =
+    coaching.recos[0]?.message ??
+    'Continue comme ça — reviens demain pour un nouveau conseil personnalisé.';
+
+  const sessionTitle = sessionWorkout ? sessionWorkout.notes || gymName || 'Séance du jour' : 'Jour libre';
 
   return (
     <Screen>
-      <View style={{ gap: theme.spacing.xs }}>
-        <Text variant="footnote" color="textTertiary">
-          Aujourd’hui
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text variant="display" style={{ fontSize: 20, lineHeight: 24, textTransform: 'none' }}>
+          mangetout
         </Text>
-        <Text variant="largeTitle">Bonjour 👋</Text>
+        <Text variant="label" color="textTertiary">
+          {formatHeaderDate(new Date())}
+        </Text>
       </View>
 
-      {/* Calories & macros du jour vs objectif */}
-      <Card>
-        <Text variant="headline">Calories &amp; macros</Text>
-        <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.xs }}>
-          <MacroRow label="Calories" unit="kcal" value={total.kcal} goal={goals?.kcal} color={theme.colors.accent} />
-          <MacroRow label="Protéines" unit="g" value={total.protein_g} goal={goals?.protein_g} color={theme.colors.success} />
-          <MacroRow label="Glucides" unit="g" value={total.carbs_g} goal={goals?.carbs_g} color={theme.colors.warning} />
-          <MacroRow label="Lipides" unit="g" value={total.fat_g} goal={goals?.fat_g} color={theme.colors.danger} />
-        </View>
-        {!goals ? (
-          <Text variant="footnote" color="textTertiary">
-            Définis tes objectifs dans Réglages pour suivre ta progression.
-          </Text>
-        ) : null}
-      </Card>
+      <View style={{ gap: theme.spacing.sm }}>
+        <Text variant="label" color="accent">
+          Séance du jour
+        </Text>
+        <Text variant="displayLg">{sessionTitle}</Text>
+      </View>
 
-      {/* Tendance de poids */}
-      <Pressable onPress={() => router.push('/weight')}>
-        <Card>
-          <Text variant="headline">Poids</Text>
-          {weight.latest !== undefined ? (
-            <>
-              <Text variant="title2">{weight.latest} kg</Text>
-              <Text variant="footnote" color="textTertiary">
-                {weight.delta > 0 ? '+' : ''}
-                {weight.delta} kg depuis le début · appuie pour le détail
-              </Text>
-            </>
-          ) : (
-            <Text variant="subhead" color="textSecondary">
-              Ajoute une pesée pour suivre la tendance.
-            </Text>
-          )}
-        </Card>
-      </Pressable>
-
-      {/* Activité (Health Connect) */}
-      <Card>
-        <Text variant="headline">Activité</Text>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.xl, marginTop: theme.spacing.xs }}>
-          <Stat label="Pas" value={health.summary.steps > 0 ? String(health.summary.steps) : '—'} />
-          <Stat
-            label="Cal. actives"
-            value={health.summary.activeCalories > 0 ? `${health.summary.activeCalories}` : '—'}
-          />
-          <Stat label="Streak" value={`${streak} j`} />
-        </View>
-        {health.providerName === 'health-connect' && health.summary.steps === 0 ? (
-          <Pressable onPress={health.requestPermission} disabled={health.requesting}>
-            <Text variant="footnote" color="accent">
-              {health.requesting ? 'Connexion…' : 'Connecter Health Connect'}
-            </Text>
-          </Pressable>
-        ) : null}
-      </Card>
-
-      {/* Coaching — constats factuels (jamais de prédiction), sourcés (ACSM/ISSN/NIH/RP) */}
-      <Card>
-        <Text variant="headline">Coaching</Text>
-        {coaching.recos.length === 0 ? (
-          <Text variant="subhead" color="textSecondary">
-            Pas encore assez de données pour du feedback.
-          </Text>
-        ) : (
-          <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.xs }}>
-            {coaching.recos.map((reco) => (
-              <CoachingRecoRow key={reco.id} reco={reco} />
+      <Card style={{ padding: 20, gap: theme.spacing.lg }}>
+        {sessionWorkout ? (
+          <View style={{ gap: theme.spacing.sm }}>
+            {exercises.map((exercise, index) => (
+              <View
+                key={exercise.id}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingBottom: theme.spacing.sm,
+                  borderBottomWidth: index < exercises.length - 1 ? 1 : 0,
+                  borderBottomColor: theme.colors.separator,
+                }}
+              >
+                <Text variant="body" style={{ fontWeight: '500' }}>
+                  {exercise.name}
+                </Text>
+                <Text variant="mono" tabular color="textSecondary" style={{ fontSize: 13 }}>
+                  {exerciseSummary(exercise.sets)}
+                </Text>
+              </View>
             ))}
           </View>
+        ) : (
+          <Text variant="body" color="textSecondary">
+            Aucune séance prévue aujourd’hui — planifie ta prochaine séance.
+          </Text>
         )}
+        <Button
+          label={sessionWorkout ? 'Démarrer la séance' : 'Planifier une séance'}
+          icon={<Ionicons name="play" size={18} color={theme.colors.onAccent} />}
+          fullWidth
+          size="lg"
+          onPress={() =>
+            sessionWorkout
+              ? router.push({ pathname: '/workout/[id]', params: { id: sessionWorkout.id } })
+              : router.push('/workout-new')
+          }
+        />
       </Card>
+
+      <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+        <StatCard
+          style={{ flex: 1 }}
+          label="Volume hebdo"
+          value={weeklyVolumeKg !== undefined ? formatThousands(weeklyVolumeKg) : '—'}
+          unit={weeklyVolumeKg !== undefined ? 'KG' : undefined}
+        />
+        <StatCard style={{ flex: 1 }} label="Récupération" value="—" deltaTone="warn" />
+      </View>
+
+      <Pressable onPress={() => router.push('/(tabs)/coach')} accessibilityRole="button">
+        <Card style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'flex-start' }}>
+          <Ionicons
+            name="chatbubble-ellipses"
+            size={18}
+            color={theme.colors.accent}
+            style={{ marginTop: 2 }}
+          />
+          <View style={{ flex: 1, gap: theme.spacing.xs }}>
+            <Text variant="label" color="textTertiary">
+              Coach
+            </Text>
+            <Text variant="body" color="textSecondary">
+              {coachMessage}
+            </Text>
+          </View>
+        </Card>
+      </Pressable>
     </Screen>
-  );
-}
-
-function CoachingRecoRow({ reco }: { reco: Reco }) {
-  const theme = useTheme();
-  return (
-    <View style={{ gap: 2 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-        <Text variant="subhead" style={{ flex: 1 }}>
-          {reco.message}
-        </Text>
-        <Badge label={RECO_LEVEL_LABEL[reco.level]} tone={RECO_LEVEL_TONE[reco.level]} />
-      </View>
-      <Text variant="footnote" color="textTertiary">
-        source : {RECO_SOURCE_LABEL[reco.source]}
-      </Text>
-    </View>
-  );
-}
-
-function MacroRow({
-  label,
-  unit,
-  value,
-  goal,
-  color,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  goal?: number;
-  color: string;
-}) {
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text variant="subhead" color="textSecondary">
-          {label}
-        </Text>
-        <Text variant="subhead" color="textTertiary">
-          {value} / {goal ?? '—'} {unit}
-        </Text>
-      </View>
-      <ProgressBar progress={goal ? goalProgress(value, goal) : 0} color={color} />
-    </View>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ gap: 2 }}>
-      <Text variant="title3">{value}</Text>
-      <Text variant="footnote" color="textTertiary">
-        {label}
-      </Text>
-    </View>
   );
 }
