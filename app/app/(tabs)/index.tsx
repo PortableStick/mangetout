@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Screen } from '@/components/ui/Screen';
@@ -9,7 +10,9 @@ import { useGoals } from '@/features/goals/useGoals';
 import { useHealthData } from '@/features/health/useHealthData';
 import { goalProgress, sumMacros } from '@/features/food/nutrition';
 import { today, useEntryDates, useFoodEntries } from '@/features/food/useFoodLog';
+import type { Reco } from '@/features/stats/coaching';
 import { computeStreak } from '@/features/stats/streak';
+import { RECO_LEVEL_LABEL, RECO_LEVEL_TONE, RECO_SOURCE_LABEL, useCoaching } from '@/features/stats/useCoaching';
 import { useWeightEntries } from '@/features/weight/useWeight';
 import { weightStats } from '@/features/weight/weight';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -28,6 +31,7 @@ export default function DashboardScreen() {
   const { data: weightEntries = [] } = useWeightEntries();
   const weight = weightStats(weightEntries);
   const health = useHealthData(date);
+  const coaching = useCoaching();
 
   const total = sumMacros(entries);
   const streak = computeStreak(entryDates, date);
@@ -96,7 +100,40 @@ export default function DashboardScreen() {
           </Pressable>
         ) : null}
       </Card>
+
+      {/* Coaching — constats factuels (jamais de prédiction), sourcés (ACSM/ISSN/NIH/RP) */}
+      <Card>
+        <Text variant="headline">Coaching</Text>
+        {coaching.recos.length === 0 ? (
+          <Text variant="subhead" color="textSecondary">
+            Pas encore assez de données pour du feedback.
+          </Text>
+        ) : (
+          <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.xs }}>
+            {coaching.recos.map((reco) => (
+              <CoachingRecoRow key={reco.id} reco={reco} />
+            ))}
+          </View>
+        )}
+      </Card>
     </Screen>
+  );
+}
+
+function CoachingRecoRow({ reco }: { reco: Reco }) {
+  const theme = useTheme();
+  return (
+    <View style={{ gap: 2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+        <Text variant="subhead" style={{ flex: 1 }}>
+          {reco.message}
+        </Text>
+        <Badge label={RECO_LEVEL_LABEL[reco.level]} tone={RECO_LEVEL_TONE[reco.level]} />
+      </View>
+      <Text variant="footnote" color="textTertiary">
+        source : {RECO_SOURCE_LABEL[reco.source]}
+      </Text>
+    </View>
   );
 }
 

@@ -12,6 +12,7 @@ import { env } from '@/config/env';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useGoals, useSetGoals } from '@/features/goals/useGoals';
 import { useSync } from '@/features/sync/useSync';
+import type { GoalMode } from '@/features/stats/coaching';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const numOrUndef = (s: string) => {
@@ -78,6 +79,22 @@ export default function SettingsScreen() {
             })
           }
           style={{ marginTop: 8 }}
+        />
+      </Card>
+
+      <Card>
+        <Text variant="headline">Mode objectif</Text>
+        <Text variant="footnote" color="textTertiary">
+          Utilisé par les repères de protéines (ISSN) et de calories (NIH) du dashboard.
+        </Text>
+        <SegmentedControl
+          options={[
+            { label: 'Prise de muscle', value: 'gain' },
+            { label: 'Perte de gras', value: 'cut' },
+            { label: 'Maintien', value: 'maintain' },
+          ]}
+          value={goals?.mode ?? 'maintain'}
+          onChange={(mode: GoalMode) => setGoals.mutate({ ...(goals ?? {}), mode })}
         />
       </Card>
 

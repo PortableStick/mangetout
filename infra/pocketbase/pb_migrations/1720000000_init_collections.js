@@ -147,6 +147,7 @@ migrate(
       { type: 'number', name: 'carbs_g' },
       { type: 'number', name: 'fat_g' },
       { type: 'number', name: 'weight_target_kg' },
+      { type: 'text', name: 'mode' }, // gain | cut | maintain — mode objectif (Task 19.2)
     ]);
 
     create('meal_plans', [

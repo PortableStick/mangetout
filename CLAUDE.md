@@ -70,7 +70,7 @@ Toutes owner-scoped (`user` = relation vers `users`), règles d'accès `@request
 - `workouts` — séance (date, gym, notes).
 - `exercises` — exercice d'une séance (workout, equipment?, name, order).
 - `sets` — série (exercise, reps, weight_kg, order).
-- `goals` — objectifs (kcal, protein_g, carbs_g, fat_g, weight_target_kg?).
+- `goals` — objectifs (kcal, protein_g, carbs_g, fat_g, weight_target_kg?, mode?: gain|cut|maintain).
 - `meal_plans` — plan IA généré (semaine, json, éditable, régénérable par jour).
 
 ## Architecture & décisions clés

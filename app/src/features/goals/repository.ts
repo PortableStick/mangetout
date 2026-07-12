@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { syncRecords } from '@/db/schema';
 import { newId } from '@/lib/id';
+import type { GoalMode } from '@/features/stats/coaching';
 import { getSyncManager } from '@/sync/manager';
 
 export interface Goals {
@@ -12,6 +13,8 @@ export interface Goals {
   carbs_g?: number;
   fat_g?: number;
   weight_target_kg?: number;
+  /** Mode objectif (prise de muscle / perte de gras / maintien), défaut 'maintain'. */
+  mode?: GoalMode;
 }
 
 /** Objectifs courants = enregistrement `goals` le plus récent de l'utilisateur. */
@@ -35,6 +38,7 @@ export async function setGoals(goals: Goals, userId: string): Promise<void> {
     carbs_g: goals.carbs_g,
     fat_g: goals.fat_g,
     weight_target_kg: goals.weight_target_kg,
+    mode: goals.mode,
     user: userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
