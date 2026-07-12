@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { applyAction, buildRecord } from './execute.ts';
-import { runCoach } from './engine.ts';
+import { proposalSummary, runCoach } from './engine.ts';
 import { isAction, TOOLS, validateToolCall } from './tools.ts';
 
 const NOW = 1_700_000_000_000;
@@ -107,6 +107,12 @@ describe('outils salles/équipement', () => {
       expect(TOOLS[t]?.kind).toBe('action');
       expect(['create', 'update', 'delete']).toContain(TOOLS[t]?.op);
     }
+  });
+
+  it('proposalSummary couvre les actions salles', () => {
+    expect(proposalSummary('add_gym', { name: 'Home', gymType: 'home' })).toContain('Home');
+    expect(proposalSummary('delete_gym', { id: 'x' })).toMatch(/[Ss]upprimer/);
+    expect(proposalSummary('add_equipment', { name: 'Presse' })).toContain('Presse');
   });
 });
 
