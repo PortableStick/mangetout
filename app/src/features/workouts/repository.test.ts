@@ -15,6 +15,7 @@ jest.mock('@/lib/id', () => ({ newId: () => mockNewId() }));
 
 import {
   addGym,
+  createWorkout,
   deleteExercise,
   deleteGym,
   deleteSet,
@@ -313,6 +314,71 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
       'sets',
       'upsert',
       expect.objectContaining({ id: 's1', user: 'u1', deleted: true })
+    );
+  });
+
+  it('createWorkout persiste at/date/status/source fournis et propage source aux exercices', async () => {
+    mockNewId.mockReturnValueOnce('w1').mockReturnValueOnce('e1').mockReturnValueOnce('s1');
+
+    const id = await createWorkout({
+      gymId: 'g1',
+      at: '2026-01-01T09:30:00.000Z',
+      status: 'planned',
+      source: 'generated',
+      exercises: [{ name: 'Squat', equipmentId: 'eq1', sets: [{ reps: 10, weight_kg: 50 }] }],
+      userId: 'u1',
+    });
+
+    expect(id).toBe('w1');
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'workouts',
+      'upsert',
+      expect.objectContaining({
+        id: 'w1',
+        at: '2026-01-01T09:30:00.000Z',
+        date: '2026-01-01',
+        gym: 'g1',
+        status: 'planned',
+        source: 'generated',
+        user: 'u1',
+        deleted: false,
+      })
+    );
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'exercises',
+      'upsert',
+      expect.objectContaining({ id: 'e1', workout: 'w1', name: 'Squat', source: 'generated', user: 'u1' })
+    );
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'sets',
+      'upsert',
+      expect.objectContaining({ id: 's1', exercise: 'e1', reps: 10, weight_kg: 50, user: 'u1' })
+    );
+  });
+
+  it('createWorkout sans at/status/source applique les défauts (maintenant, done, manual)', async () => {
+    mockNewId.mockReturnValueOnce('w2');
+
+    const id = await createWorkout({ gymId: 'g1', exercises: [], userId: 'u1' });
+
+    expect(id).toBe('w2');
+    const [, , payload] = mockEnqueue.mock.calls[0]! as [string, string, Record<string, unknown>];
+    expect(payload.status).toBe('done');
+    expect(payload.source).toBe('manual');
+    expect(typeof payload.at).toBe('string');
+    expect(payload.date).toBe((payload.at as string).slice(0, 10));
+  });
+
+  it('createWorkout avec `at` dans le futur applique le défaut de statut `planned`', async () => {
+    mockNewId.mockReturnValueOnce('w3');
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    await createWorkout({ gymId: 'g1', at: future, exercises: [], userId: 'u1' });
+
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'workouts',
+      'upsert',
+      expect.objectContaining({ id: 'w3', at: future, status: 'planned', source: 'manual' })
     );
   });
 

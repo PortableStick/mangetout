@@ -164,7 +164,14 @@ export async function removeEquipment(input: { id: string; userId: string }): Pr
 
 export interface WorkoutDraft {
   gymId: string;
-  date: string;
+  /** @deprecated utiliser `at` — conservé pour compat, dérive `at` à midi si fourni seul. */
+  date?: string;
+  /** Date/heure ISO de la séance. Défaut : maintenant. */
+  at?: string;
+  /** Défaut : dérivé de `at` (passé/maintenant → 'done', futur → 'planned'). */
+  status?: WorkoutStatus;
+  /** Défaut : 'manual'. */
+  source?: WorkoutSource;
   notes?: string;
   exercises: {
     name: string;
@@ -181,11 +188,18 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
   const base = { user: draft.userId, clientUpdatedAt: now, deleted: false };
   const workoutId = newId();
 
+  const at = draft.at ?? (draft.date ? `${draft.date}T12:00:00.000Z` : new Date().toISOString());
+  const status = draft.status ?? (new Date(at).getTime() <= now ? 'done' : 'planned');
+  const source = draft.source ?? 'manual';
+
   await mgr.enqueue('workouts', 'upsert', {
     id: workoutId,
-    date: draft.date,
+    at,
+    date: at.slice(0, 10),
     gym: draft.gymId,
     notes: draft.notes ?? '',
+    status,
+    source,
     ...base,
   });
 
@@ -198,6 +212,7 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
       equipment: ex.equipmentId ?? '',
       name: ex.name,
       position: i,
+      source,
       ...base,
     });
     for (let s = 0; s < ex.sets.length; s++) {
