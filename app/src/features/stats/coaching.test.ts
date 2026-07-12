@@ -128,9 +128,21 @@ describe('calorieReco', () => {
     expect(reco.level).toBe('good');
   });
 
-  it('avec goal_kcal, intake bien au dessus -> high', () => {
+  it('avec goal_kcal, intake bien au dessus -> high (cut/maintain)', () => {
+    expect(calorieReco(2800, 2000, 'cut').level).toBe('high');
+    expect(calorieReco(2800, 2000, 'maintain').level).toBe('high');
+  });
+
+  it("mode gain, intake bien au dessus de l'objectif -> good, jamais 'high' (surplus attendu)", () => {
     const reco = calorieReco(2800, 2000, 'gain');
-    expect(reco.level).toBe('high');
+    expect(reco.level).toBe('good');
+    expect(reco.level).not.toBe('high');
+    expect(reco.source).toBe('nih');
+  });
+
+  it('mode gain, intake bien en dessous de l’objectif -> low (reste cohérent)', () => {
+    const reco = calorieReco(1200, 2000, 'gain');
+    expect(reco.level).toBe('low');
   });
 
   it('sans goal_kcal -> info factuel', () => {

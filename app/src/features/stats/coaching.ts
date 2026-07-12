@@ -151,6 +151,16 @@ export function calorieReco(
     };
   }
   if (delta > CALORIE_TOLERANCE_KCAL) {
+    // En mode gain, un surplus au-dessus de l'objectif est le résultat attendu (pas un excès à
+    // corriger) : ne pas le signaler en 'high' (rendu rouge/danger côté UI).
+    if (mode === 'gain') {
+      return {
+        id: 'calories',
+        level: 'good',
+        message: `Apport de ${Math.round(intake_kcal)} kcal, au-dessus de l'objectif de ${Math.round(goal_kcal)} kcal — cohérent avec une prise de masse`,
+        source: 'nih',
+      };
+    }
     return {
       id: 'calories',
       level: 'high',

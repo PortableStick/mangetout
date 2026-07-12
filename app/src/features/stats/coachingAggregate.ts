@@ -47,6 +47,13 @@ export interface WeeklyVolumeInput {
   equipmentMuscles: Record<string, string[]>;
 }
 
+/**
+ * Pseudo-groupes non hypertrophiables : ACSM (≥10 séries/sem) et le repère RP (MRV) ne
+ * s'appliquent qu'à de vrais groupes musculaires. `cardio`/`fullbody` n'ont pas de cible de
+ * volume hebdomadaire au sens hypertrophie — les exclure des recos de volume en amont.
+ */
+const VOLUME_RECO_EXCLUDED_GROUPS: readonly MuscleGroup[] = ['cardio', 'fullbody'];
+
 export interface CoachingInputs {
   intake_kcal: number;
   intake_protein_g: number;
@@ -80,9 +87,13 @@ export function buildCoachingRecos(input: CoachingInputs): Reco[] {
 
   if (input.volume) {
     const setsByMuscle = weeklySetsByMuscle(input.volume.workouts, input.volume.exercises, input.volume.equipmentMuscles);
+    // Pseudo-groupes non hypertrophiables (cardio, fullbody) : pas de reco de volume ACSM/RP.
+    const hypertrophyMuscles = Object.entries(setsByMuscle).filter(
+      ([muscle]) => !VOLUME_RECO_EXCLUDED_GROUPS.includes(muscle as MuscleGroup)
+    );
     // Muscles traduits en FR avant de générer les messages (coaching.ts reste agnostique de la langue).
     const setsByMuscleLabel = Object.fromEntries(
-      Object.entries(setsByMuscle).map(([muscle, sets]) => [MUSCLE_LABELS[muscle as MuscleGroup] ?? muscle, sets])
+      hypertrophyMuscles.map(([muscle, sets]) => [MUSCLE_LABELS[muscle as MuscleGroup] ?? muscle, sets])
     );
     recos.push(...volumeRecos(setsByMuscleLabel));
   }

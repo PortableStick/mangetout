@@ -95,5 +95,17 @@ describe('sanity guardrails', () => {
     it('rejette un metricSet inconnu', () => {
       expect(isSane('sets', base({ metricSet: 'not_a_preset', fields: { reps: 10 } }), NOW)).toBe(false);
     });
+
+    it('accepte une série cardio PARTIELLE réaliste (durée+distance, sans watts/spm/split) — FIX perte de données', () => {
+      expect(
+        isSane('sets', base({ metricSet: 'cardio_row', fields: { duration_s: 1200, distance_m: 5000 } }), NOW)
+      ).toBe(true);
+    });
+
+    it('rejette toujours une série cardio sans son champ primaire (duration_s manquant)', () => {
+      expect(
+        isSane('sets', base({ metricSet: 'cardio_row', fields: { distance_m: 5000 } }), NOW)
+      ).toBe(false);
+    });
   });
 });

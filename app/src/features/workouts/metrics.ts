@@ -36,7 +36,13 @@ export interface MetricField {
   optional?: boolean;
 }
 
-/** Catalogue fermé : toute clé de metric_set doit exister ici. */
+/**
+ * Catalogue fermé : toute clé de metric_set doit exister ici.
+ * NOTE : `optional` ici est un DÉFAUT informatif (non utilisé par `setSchema`/`fieldsFor`,
+ * voir `METRIC_SET_REQUIRED` ci-dessous) — un même champ peut être requis dans un preset
+ * (ex. `reps` en `strength`) et optionnel dans un autre. La source de vérité pour la
+ * validation est `METRIC_SET_REQUIRED`, PAR PRESET.
+ */
 export const METRIC_FIELDS: Record<MetricKey, MetricField> = {
   reps: { key: 'reps', label: 'Répétitions', unit: '', kind: 'int', min: 0, max: 1000 },
   weight_kg: { key: 'weight_kg', label: 'Charge', unit: 'kg', kind: 'float', min: 0, max: 1000 },
@@ -56,9 +62,18 @@ export const METRIC_FIELDS: Record<MetricKey, MetricField> = {
     kind: 'float',
     min: 0,
     max: 500,
+    optional: true,
   },
   duration_s: { key: 'duration_s', label: 'Durée', unit: 's', kind: 'duration', min: 0, max: 86400 },
-  distance_m: { key: 'distance_m', label: 'Distance', unit: 'm', kind: 'int', min: 0, max: 100000 },
+  distance_m: {
+    key: 'distance_m',
+    label: 'Distance',
+    unit: 'm',
+    kind: 'int',
+    min: 0,
+    max: 100000,
+    optional: true,
+  },
   pace_split_500m: {
     key: 'pace_split_500m',
     label: 'Split /500m',
@@ -66,12 +81,45 @@ export const METRIC_FIELDS: Record<MetricKey, MetricField> = {
     kind: 'duration',
     min: 0,
     max: 600,
+    optional: true,
   },
-  speed_kmh: { key: 'speed_kmh', label: 'Vitesse', unit: 'km/h', kind: 'float', min: 0, max: 60 },
-  watts: { key: 'watts', label: 'Puissance', unit: 'W', kind: 'int', min: 0, max: 3000 },
-  cadence_rpm: { key: 'cadence_rpm', label: 'Cadence', unit: 'rpm', kind: 'int', min: 0, max: 400 },
-  cadence_spm: { key: 'cadence_spm', label: 'Cadence', unit: 'spm', kind: 'int', min: 0, max: 400 },
-  incline_pct: { key: 'incline_pct', label: 'Inclinaison', unit: '%', kind: 'float', min: 0, max: 45 },
+  speed_kmh: {
+    key: 'speed_kmh',
+    label: 'Vitesse',
+    unit: 'km/h',
+    kind: 'float',
+    min: 0,
+    max: 60,
+    optional: true,
+  },
+  watts: { key: 'watts', label: 'Puissance', unit: 'W', kind: 'int', min: 0, max: 3000, optional: true },
+  cadence_rpm: {
+    key: 'cadence_rpm',
+    label: 'Cadence',
+    unit: 'rpm',
+    kind: 'int',
+    min: 0,
+    max: 400,
+    optional: true,
+  },
+  cadence_spm: {
+    key: 'cadence_spm',
+    label: 'Cadence',
+    unit: 'spm',
+    kind: 'int',
+    min: 0,
+    max: 400,
+    optional: true,
+  },
+  incline_pct: {
+    key: 'incline_pct',
+    label: 'Inclinaison',
+    unit: '%',
+    kind: 'float',
+    min: 0,
+    max: 45,
+    optional: true,
+  },
   heart_rate_bpm: {
     key: 'heart_rate_bpm',
     label: 'FC',
@@ -114,12 +162,32 @@ export const METRIC_SETS: Record<MetricSetKey, MetricKey[]> = {
   cardio_generic: ['duration_s', 'distance_m', 'heart_rate_bpm'],
 };
 
-/** `MetricField[]` dans l'ordre du preset. */
+/**
+ * Preset → clés REQUISES (le reste des clés du preset, cf. `METRIC_SETS`, est optionnel).
+ * Source de vérité de l'« optionnalité » : PAR PRESET, pas globale à `METRIC_FIELDS`
+ * (un même champ, ex. `reps`, est requis en `strength`/`bodyweight`/`assisted` mais n'existe
+ * même pas dans les presets cardio). Chaque preset cardio ne garde qu'UN champ primaire requis
+ * (`duration_s`) : une série cardio réaliste (rameur = durée+distance, tapis sans inclinaison…)
+ * ne doit pas échouer la validation faute de champs secondaires (FIX perte de données silencieuse).
+ */
+export const METRIC_SET_REQUIRED: Record<MetricSetKey, MetricKey[]> = {
+  strength: ['reps', 'weight_kg'],
+  bodyweight: ['reps'],
+  assisted: ['reps'],
+  isometric: ['duration_s'],
+  cardio_row: ['duration_s'],
+  cardio_bike: ['duration_s'],
+  cardio_run: ['duration_s'],
+  cardio_generic: ['duration_s'],
+};
+
+/** `MetricField[]` dans l'ordre du preset, `optional` recalculé PAR PRESET (`METRIC_SET_REQUIRED`). */
 export function fieldsFor(set: MetricSetKey): MetricField[] {
-  return METRIC_SETS[set].map((key) => METRIC_FIELDS[key]);
+  const required = new Set(METRIC_SET_REQUIRED[set]);
+  return METRIC_SETS[set].map((key) => ({ ...METRIC_FIELDS[key], optional: !required.has(key) }));
 }
 
-/** Schéma zod validant une série saisie selon son metric_set (bornes + champs requis/optionnels). */
+/** Schéma zod validant une série saisie selon son metric_set (bornes + champs requis/optionnels par preset). */
 export function setSchema(set: MetricSetKey): z.ZodType {
   const shape: Record<string, z.ZodType> = {};
 

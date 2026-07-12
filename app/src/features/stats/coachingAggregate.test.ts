@@ -33,7 +33,7 @@ describe('buildCoachingRecos', () => {
     const protein = recos.find((r) => r.id === 'protein');
     expect(protein?.level).toBe('info'); // proteinTarget(80,'gain') = [112,160] ; 200 > 160
     const calories = recos.find((r) => r.id === 'calories');
-    expect(calories?.level).toBe('high'); // 2500 vs 2000 -> au-dessus
+    expect(calories?.level).toBe('good'); // 2500 vs 2000 en mode gain -> surplus attendu, pas 'high'
     expect(calories?.source).toBe('nih');
   });
 
@@ -65,6 +65,28 @@ describe('buildCoachingRecos', () => {
     expect(legReco).toBeDefined();
     expect(legReco?.message).toContain('Jambes');
     expect(legReco?.source).toBe('acsm');
+  });
+
+  it("ne produit aucune reco de volume ACSM/RP pour les pseudo-groupes cardio/fullbody", () => {
+    const recos = buildCoachingRecos({
+      intake_kcal: 2000,
+      intake_protein_g: 100,
+      bodyweightKg: 70,
+      mode: 'maintain',
+      volume: {
+        workouts: [{ id: 'w1', status: 'done' }],
+        exercises: [
+          { workout: 'w1', equipment: 'rower', setCount: 4 },
+          { workout: 'w1', equipment: 'burpee_station', setCount: 5 },
+          { workout: 'w1', equipment: 'barbell', setCount: 12 },
+        ],
+        equipmentMuscles: { rower: ['cardio'], burpee_station: ['fullbody'], barbell: ['legs'] },
+      },
+    });
+
+    const volumeRelated = recos.filter((r) => r.source === 'acsm' || r.source === 'rp_heuristic');
+    expect(volumeRelated.every((r) => r.id !== 'Cardio' && r.id !== 'Full body')).toBe(true);
+    expect(recos.find((r) => r.id === 'Jambes')).toBeDefined();
   });
 
   it('avec volume vide (pas de séance) : pas de reco de volume, pas de crash', () => {

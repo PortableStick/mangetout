@@ -21,6 +21,14 @@ export function SetInput({ metricSet, value, onChange }: SetInputProps) {
 
   const setField = (key: MetricKey, v: number | string) => onChange({ ...value, [key]: v });
 
+  /** Retire la clé (au lieu d'écrire 0) quand le champ numérique est vidé : sinon effacer un
+   * champ optionnel borné (ex. `rpe` min 6) écrit une valeur hors bornes qui casse la série. */
+  const clearField = (key: MetricKey) => {
+    const next = { ...value };
+    delete next[key];
+    onChange(next);
+  };
+
   return (
     <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap', alignItems: 'flex-start' }}>
       {fieldsFor(metricSet).map((field) => {
@@ -65,6 +73,10 @@ export function SetInput({ metricSet, value, onChange }: SetInputProps) {
             <Field
               value={current === undefined ? '' : String(current)}
               onChangeText={(text) => {
+                if (text.trim() === '') {
+                  clearField(field.key);
+                  return;
+                }
                 const parsed = field.kind === 'float' ? numOf(text) : Math.round(numOf(text));
                 setField(field.key, parsed);
               }}
