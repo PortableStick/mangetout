@@ -69,7 +69,7 @@ const dark: Palette = {
   success: '#3DDC84',
   warning: '#FFB340',
   danger: '#FF6961',
-  onDanger: '#FFFFFF',
+  onDanger: '#160B0A',
   shadow: '#000000',
 };
 

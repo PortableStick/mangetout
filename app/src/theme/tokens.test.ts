@@ -37,6 +37,6 @@ describe('tokens', () => {
 
   it('palette expose onDanger pour le texte sur fond danger', () => {
     expect(palettes.light.onDanger).toBe('#FFFFFF');
-    expect(palettes.dark.onDanger).toBe('#FFFFFF');
+    expect(palettes.dark.onDanger).toBe('#160B0A');
   });
 });
