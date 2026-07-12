@@ -70,18 +70,25 @@ export default function WorkoutsScreen() {
         />
       ) : (
         workouts.map((w) => (
-          <Card key={w.id}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text variant="headline">{w.date}</Text>
-              <Text variant="subhead" color="textSecondary">
-                {gymName.get(w.gym) ?? 'Salle'}
+          <Pressable
+            key={w.id}
+            onPress={() => router.push({ pathname: '/workout/[id]', params: { id: w.id } })}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <Card>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text variant="headline">{w.date}</Text>
+                <Text variant="subhead" color="textSecondary">
+                  {gymName.get(w.gym) ?? 'Salle'}
+                </Text>
+              </View>
+              <Text variant="footnote" color="textTertiary">
+                {w.exerciseCount} exercice{w.exerciseCount > 1 ? 's' : ''}
+                {w.notes ? ` · ${w.notes}` : ''}
               </Text>
-            </View>
-            <Text variant="footnote" color="textTertiary">
-              {w.exerciseCount} exercice{w.exerciseCount > 1 ? 's' : ''}
-              {w.notes ? ` · ${w.notes}` : ''}
-            </Text>
-          </Card>
+            </Card>
+          </Pressable>
         ))
       )}
 
