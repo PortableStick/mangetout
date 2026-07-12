@@ -81,6 +81,30 @@ export default function SettingsScreen() {
       </Card>
 
       <Card>
+        <Text variant="headline">Apparence</Text>
+        <Text variant="footnote" color="textTertiary">
+          Choisis l’apparence de l’app.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          {(
+            [
+              { value: 'system', label: 'Système' },
+              { value: 'light', label: 'Clair' },
+              { value: 'dark', label: 'Sombre' },
+            ] as const
+          ).map(({ value, label }) => (
+            <Button
+              key={value}
+              label={label}
+              variant={theme.mode === value ? 'primary' : 'secondary'}
+              onPress={() => theme.setMode(value)}
+              style={{ flex: 1 }}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card>
         <Text variant="headline">Synchronisation</Text>
         <Text variant="footnote" color="textTertiary">
           Le homelab est la source de vérité. La sync se fait automatiquement ; tu peux la forcer.
