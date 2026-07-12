@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { palettes, shadow, spacing } from './tokens';
+import { palettes, shadow, spacing, withAlpha } from './tokens';
 
 describe('tokens', () => {
   it('expose une palette claire et sombre complètes', () => {
@@ -23,5 +23,20 @@ describe('tokens', () => {
     expect(spacing.xs).toBeLessThan(spacing.sm);
     expect(spacing.sm).toBeLessThan(spacing.lg);
     expect(spacing.lg).toBeLessThan(spacing.xxl);
+  });
+
+  it('withAlpha() convertit un hex #rrggbb en rgba', () => {
+    expect(withAlpha('#1F9E5E', 0.5)).toBe('rgba(31, 158, 94, 0.5)');
+  });
+
+  it('withAlpha() renvoie l’entrée telle quelle si ce n’est pas un hex #rrggbb valide', () => {
+    expect(withAlpha('rgba(0,0,0,0.5)', 0.5)).toBe('rgba(0,0,0,0.5)');
+    expect(withAlpha('#fff', 0.5)).toBe('#fff');
+    expect(withAlpha('not-a-color', 0.5)).toBe('not-a-color');
+  });
+
+  it('palette expose onDanger pour le texte sur fond danger', () => {
+    expect(palettes.light.onDanger).toBe('#FFFFFF');
+    expect(palettes.dark.onDanger).toBe('#FFFFFF');
   });
 });
