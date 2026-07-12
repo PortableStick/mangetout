@@ -75,7 +75,7 @@ function exerciseSummary(sets: ExerciseSet[]): string {
 function useWeeklyVolumeKg() {
   return useQuery({
     queryKey: ['today-weekly-volume-kg'],
-    queryFn: async (): Promise<number | undefined> => {
+    queryFn: async (): Promise<number | null> => {
       const now = Date.now();
       const workouts = listWorkouts().filter((w) => {
         if (w.status !== 'done') return false;
@@ -97,7 +97,7 @@ function useWeeklyVolumeKg() {
           }
         }
       }
-      return hasData ? total : undefined;
+      return hasData ? total : null;
     },
   });
 }
@@ -200,8 +200,8 @@ export default function TodayScreen() {
         <StatCard
           style={{ flex: 1 }}
           label="Volume hebdo"
-          value={weeklyVolumeKg !== undefined ? formatThousands(weeklyVolumeKg) : '—'}
-          unit={weeklyVolumeKg !== undefined ? 'KG' : undefined}
+          value={weeklyVolumeKg != null ? formatThousands(weeklyVolumeKg) : '—'}
+          unit={weeklyVolumeKg != null ? 'KG' : undefined}
         />
         <StatCard style={{ flex: 1 }} label="Récupération" value="—" deltaTone="warn" />
       </View>
