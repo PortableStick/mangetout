@@ -56,7 +56,14 @@ export function buildRecord(
     case 'add_gym':
       return { ...base, name: args.name, gymType: args.gymType };
     case 'add_equipment':
-      return { ...base, gym: args.gymId, name: args.name, category: args.category, muscleGroups: args.muscleGroups };
+      return {
+        ...base,
+        gym: args.gymId,
+        name: args.name,
+        category: args.category,
+        muscleGroups: args.muscleGroups,
+        metricSet: args.metricSet ?? 'strength',
+      };
     default:
       return base;
   }
@@ -72,6 +79,14 @@ function buildPatch(tool: string, args: Record<string, unknown>, now: number): R
     const patch: Record<string, unknown> = { clientUpdatedAt: now };
     if (args.name !== undefined) patch.name = args.name;
     if (args.gymType !== undefined) patch.gymType = args.gymType;
+    return patch;
+  }
+  if (tool === 'update_equipment') {
+    const patch: Record<string, unknown> = { clientUpdatedAt: now };
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.category !== undefined) patch.category = args.category;
+    if (args.muscleGroups !== undefined) patch.muscleGroups = args.muscleGroups;
+    if (args.metricSet !== undefined) patch.metricSet = args.metricSet;
     return patch;
   }
   return { clientUpdatedAt: now };

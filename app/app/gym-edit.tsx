@@ -10,6 +10,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
+import type { MetricSetKey } from '@/features/workouts/metrics';
 import { MUSCLE_LABELS, type Equipment, type EquipmentCategory, type GymType, type MuscleGroup } from '@/features/workouts/types';
 import {
   useAddEquipment,
@@ -31,6 +32,18 @@ const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
 };
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as EquipmentCategory[];
 const MUSCLES = Object.keys(MUSCLE_LABELS) as MuscleGroup[];
+
+const METRIC_SET_LABELS: Record<MetricSetKey, string> = {
+  strength: 'Muscu',
+  bodyweight: 'Poids du corps',
+  assisted: 'Assisté',
+  isometric: 'Isométrie',
+  cardio_row: 'Rameur',
+  cardio_bike: 'Vélo',
+  cardio_run: 'Tapis',
+  cardio_generic: 'Cardio générique',
+};
+const METRIC_SETS = Object.keys(METRIC_SET_LABELS) as MetricSetKey[];
 
 /** Création ET édition d'une salle : infos, équipement (ajout/édition/retrait), suppression. */
 export default function GymEditScreen() {
@@ -68,18 +81,21 @@ export default function GymEditScreen() {
   const [eqName, setEqName] = useState('');
   const [eqCategory, setEqCategory] = useState<EquipmentCategory>('machine');
   const [eqMuscles, setEqMuscles] = useState<MuscleGroup[]>([]);
+  const [eqMetricSet, setEqMetricSet] = useState<MetricSetKey>('strength');
 
   const resetEquipmentForm = () => {
     setEditingEquipmentId(undefined);
     setEqName('');
     setEqCategory('machine');
     setEqMuscles([]);
+    setEqMetricSet('strength');
   };
   const startEditEquipment = (e: Equipment) => {
     setEditingEquipmentId(e.id);
     setEqName(e.name);
     setEqCategory(e.category);
     setEqMuscles(e.muscleGroups);
+    setEqMetricSet(e.metricSet);
   };
   const toggleEqMuscle = (m: MuscleGroup) =>
     setEqMuscles((ms) => (ms.includes(m) ? ms.filter((x) => x !== m) : [...ms, m]));
@@ -100,7 +116,12 @@ export default function GymEditScreen() {
 
   function submitEquipment() {
     if (!id || eqName.trim().length === 0) return;
-    const payload = { name: eqName.trim(), category: eqCategory, muscleGroups: eqMuscles };
+    const payload = {
+      name: eqName.trim(),
+      category: eqCategory,
+      muscleGroups: eqMuscles,
+      metricSet: eqMetricSet,
+    };
     if (editingEquipmentId) {
       updateEquipment.mutate(
         { id: editingEquipmentId, gymId: id, ...payload },
@@ -164,7 +185,7 @@ export default function GymEditScreen() {
             >
               <ListRow
                 title={e.name}
-                subtitle={`${CATEGORY_LABELS[e.category]}${
+                subtitle={`${CATEGORY_LABELS[e.category]} · ${METRIC_SET_LABELS[e.metricSet]}${
                   e.muscleGroups.length > 0
                     ? ` · ${e.muscleGroups.map((m) => MUSCLE_LABELS[m]).join(', ')}`
                     : ''
@@ -197,6 +218,20 @@ export default function GymEditScreen() {
           <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
             {CATEGORIES.map((c) => (
               <Chip key={c} label={CATEGORY_LABELS[c]} active={eqCategory === c} onPress={() => setEqCategory(c)} />
+            ))}
+          </View>
+
+          <Text variant="footnote" color="textTertiary">
+            Type de suivi
+          </Text>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+            {METRIC_SETS.map((ms) => (
+              <Chip
+                key={ms}
+                label={METRIC_SET_LABELS[ms]}
+                active={eqMetricSet === ms}
+                onPress={() => setEqMetricSet(ms)}
+              />
             ))}
           </View>
 

@@ -6,6 +6,7 @@ import { newId } from '@/lib/id';
 import { getSyncManager } from '@/sync/manager';
 
 import { BASIC_FIT_EQUIPMENT, DEFAULT_GYMS } from './equipmentSeed';
+import type { MetricKey, MetricSetKey } from './metrics';
 import type {
   Equipment,
   EquipmentCategory,
@@ -15,6 +16,8 @@ import type {
   GymType,
   MuscleGroup,
   Workout,
+  WorkoutStatus,
+  WorkoutSource,
 } from './types';
 
 function rows(collection: string) {
@@ -32,9 +35,20 @@ export function listGyms(): Gym[] {
   });
 }
 
+/** Mappe un record brut vers `Equipment`, avec défaut rétro-compatible `metricSet: 'strength'`
+ * pour les anciens enregistrements créés avant Task 18.2. */
+function mapEquipment(r: { id: string; payload: unknown }): Equipment {
+  const p = (r.payload ?? {}) as Record<string, unknown>;
+  return {
+    id: r.id,
+    ...p,
+    metricSet: (p.metricSet as MetricSetKey | undefined) ?? 'strength',
+  } as unknown as Equipment;
+}
+
 export function listEquipment(gymId: string): Equipment[] {
   return rows('equipment')
-    .map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as Equipment)
+    .map(mapEquipment)
     .filter((e) => e.gym === gymId);
 }
 
@@ -57,6 +71,7 @@ export async function seedDefaultGyms(userId: string): Promise<void> {
       name: e.name,
       category: e.category,
       muscleGroups: e.muscleGroups,
+      metricSet: e.metricSet ?? 'strength',
       ...base,
     });
   }
@@ -67,6 +82,7 @@ export async function addEquipment(input: {
   name: string;
   category: Equipment['category'];
   muscleGroups: Equipment['muscleGroups'];
+  metricSet: MetricSetKey;
   userId: string;
 }): Promise<void> {
   await getSyncManager().enqueue('equipment', 'upsert', {
@@ -75,6 +91,7 @@ export async function addEquipment(input: {
     name: input.name,
     category: input.category,
     muscleGroups: input.muscleGroups,
+    metricSet: input.metricSet,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
@@ -125,6 +142,7 @@ export async function deleteGym(input: { id: string; userId: string }): Promise<
       name: equipment.name,
       category: equipment.category,
       muscleGroups: equipment.muscleGroups,
+      metricSet: equipment.metricSet,
       ...base,
     });
   }
@@ -136,6 +154,7 @@ export async function updateEquipment(input: {
   name: string;
   category: EquipmentCategory;
   muscleGroups: MuscleGroup[];
+  metricSet: MetricSetKey;
   userId: string;
 }): Promise<void> {
   await getSyncManager().enqueue('equipment', 'upsert', {
@@ -144,6 +163,7 @@ export async function updateEquipment(input: {
     name: input.name,
     category: input.category,
     muscleGroups: input.muscleGroups,
+    metricSet: input.metricSet,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
@@ -162,12 +182,22 @@ export async function removeEquipment(input: { id: string; userId: string }): Pr
 
 export interface WorkoutDraft {
   gymId: string;
-  date: string;
+  /** @deprecated utiliser `at` — conservé pour compat, dérive `at` à midi si fourni seul. */
+  date?: string;
+  /** Date/heure ISO de la séance. Défaut : maintenant. */
+  at?: string;
+  /** Défaut : dérivé de `at` (passé/maintenant → 'done', futur → 'planned'). */
+  status?: WorkoutStatus;
+  /** Défaut : 'manual'. */
+  source?: WorkoutSource;
   notes?: string;
   exercises: {
     name: string;
     equipmentId?: string;
-    sets: { reps: number; weight_kg: number }[];
+    sets: {
+      metricSet: MetricSetKey;
+      fields: Partial<Record<MetricKey, number | string>>;
+    }[];
   }[];
   userId: string;
 }
@@ -179,11 +209,18 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
   const base = { user: draft.userId, clientUpdatedAt: now, deleted: false };
   const workoutId = newId();
 
+  const at = draft.at ?? (draft.date ? `${draft.date}T12:00:00.000Z` : new Date().toISOString());
+  const status = draft.status ?? (new Date(at).getTime() <= now ? 'done' : 'planned');
+  const source = draft.source ?? 'manual';
+
   await mgr.enqueue('workouts', 'upsert', {
     id: workoutId,
-    date: draft.date,
+    at,
+    date: at.slice(0, 10),
     gym: draft.gymId,
     notes: draft.notes ?? '',
+    status,
+    source,
     ...base,
   });
 
@@ -196,6 +233,7 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
       equipment: ex.equipmentId ?? '',
       name: ex.name,
       position: i,
+      source,
       ...base,
     });
     for (let s = 0; s < ex.sets.length; s++) {
@@ -203,8 +241,8 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
       await mgr.enqueue('sets', 'upsert', {
         id: newId(),
         exercise: exerciseId,
-        reps: set.reps,
-        weight_kg: set.weight_kg,
+        metricSet: set.metricSet,
+        fields: set.fields,
         position: s,
         ...base,
       });
@@ -213,9 +251,24 @@ export async function createWorkout(draft: WorkoutDraft): Promise<string> {
   return workoutId;
 }
 
+/** Mappe un record brut vers `Workout`, avec défauts rétro-compatibles pour les anciens enregistrements
+ * (qui n'ont que `date`, sans `at`/`status`/`source`). */
+function mapWorkout(r: { id: string; payload: unknown }): Workout {
+  const p = (r.payload ?? {}) as Record<string, unknown>;
+  const at = (p.at as string | undefined) ?? `${p.date as string}T12:00:00.000Z`;
+  return {
+    id: r.id,
+    ...p,
+    at,
+    date: at.slice(0, 10),
+    status: (p.status as WorkoutStatus | undefined) ?? 'done',
+    source: (p.source as WorkoutSource | undefined) ?? 'manual',
+  } as unknown as Workout;
+}
+
 export function listWorkouts(): Workout[] {
   return rows('workouts')
-    .map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as Workout)
+    .map(mapWorkout)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
@@ -226,9 +279,215 @@ export function listExercises(workoutId: string): Exercise[] {
     .sort((a, b) => a.position - b.position);
 }
 
+/** Mappe un record brut vers `ExerciseSet`, avec rétro-compat : anciens enregistrements
+ * `{ reps, weight_kg }` (sans `fields`) → `{ metricSet: 'strength', fields: { reps, weight_kg } }`. */
+function mapSet(r: { id: string; payload: unknown }): ExerciseSet {
+  const p = (r.payload ?? {}) as Record<string, unknown>;
+  if (p.fields && typeof p.fields === 'object') {
+    return {
+      id: r.id,
+      exercise: p.exercise as string,
+      position: (p.position as number) ?? 0,
+      metricSet: (p.metricSet as MetricSetKey | undefined) ?? 'strength',
+      fields: p.fields as Partial<Record<MetricKey, number | string>>,
+    };
+  }
+  const { reps, weight_kg, ...rest } = p;
+  return {
+    id: r.id,
+    ...rest,
+    metricSet: 'strength',
+    fields: { reps: reps as number, weight_kg: weight_kg as number },
+  } as unknown as ExerciseSet;
+}
+
 export function listSets(exerciseId: string): ExerciseSet[] {
   return rows('sets')
-    .map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as ExerciseSet)
+    .map(mapSet)
     .filter((s) => s.exercise === exerciseId)
     .sort((a, b) => a.position - b.position);
+}
+
+/** Met à jour une séance : ne remplace que les champs fournis, merge avec le record existant. */
+export async function updateWorkout(input: {
+  id: string;
+  at?: string;
+  gym?: string;
+  notes?: string;
+  status?: WorkoutStatus;
+  source?: WorkoutSource;
+  userId: string;
+}): Promise<void> {
+  const current = listWorkouts().find((w) => w.id === input.id);
+  const at = input.at ?? current?.at;
+  await getSyncManager().enqueue('workouts', 'upsert', {
+    id: input.id,
+    at,
+    date: at ? at.slice(0, 10) : current?.date,
+    gym: input.gym ?? current?.gym,
+    notes: input.notes ?? current?.notes,
+    status: input.status ?? current?.status ?? 'planned',
+    source: input.source ?? current?.source ?? 'manual',
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+}
+
+/** Soft-delete une séance et cascade sur ses exercices + séries (jamais de hard-delete). */
+export async function deleteWorkout(input: { id: string; userId: string }): Promise<void> {
+  const mgr = getSyncManager();
+  const now = Date.now();
+  const base = { user: input.userId, clientUpdatedAt: now, deleted: true };
+
+  await mgr.enqueue('workouts', 'upsert', { id: input.id, ...base });
+
+  for (const exercise of listExercises(input.id)) {
+    await mgr.enqueue('exercises', 'upsert', {
+      id: exercise.id,
+      workout: exercise.workout,
+      equipment: exercise.equipment,
+      name: exercise.name,
+      position: exercise.position,
+      ...base,
+    });
+
+    for (const set of listSets(exercise.id)) {
+      await mgr.enqueue('sets', 'upsert', {
+        id: set.id,
+        exercise: set.exercise,
+        metricSet: set.metricSet,
+        fields: set.fields,
+        position: set.position,
+        ...base,
+      });
+    }
+  }
+}
+
+/** Met à jour un exercice : ne remplace que les champs fournis, merge avec le record existant. */
+export async function updateExercise(input: {
+  id: string;
+  workout: string;
+  name?: string;
+  equipment?: string;
+  position?: number;
+  source?: WorkoutSource;
+  userId: string;
+}): Promise<void> {
+  const current = listExercises(input.workout).find((e) => e.id === input.id);
+  await getSyncManager().enqueue('exercises', 'upsert', {
+    id: input.id,
+    workout: input.workout,
+    equipment: input.equipment ?? current?.equipment,
+    name: input.name ?? current?.name,
+    position: input.position ?? current?.position ?? 0,
+    source: input.source ?? current?.source,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+}
+
+/** Soft-delete un exercice et cascade sur ses séries (jamais de hard-delete). */
+export async function deleteExercise(input: { id: string; userId: string }): Promise<void> {
+  const mgr = getSyncManager();
+  const now = Date.now();
+  const base = { user: input.userId, clientUpdatedAt: now, deleted: true };
+
+  await mgr.enqueue('exercises', 'upsert', { id: input.id, ...base });
+
+  for (const set of listSets(input.id)) {
+    await mgr.enqueue('sets', 'upsert', {
+      id: set.id,
+      exercise: set.exercise,
+      metricSet: set.metricSet,
+      fields: set.fields,
+      position: set.position,
+      ...base,
+    });
+  }
+}
+
+/** Met à jour une série : merge `fields` (et `metricSet` si fourni) avec le record existant. */
+export async function updateSet(input: {
+  id: string;
+  exercise: string;
+  fields: Partial<Record<MetricKey, number | string>>;
+  metricSet?: MetricSetKey;
+  position?: number;
+  userId: string;
+}): Promise<void> {
+  const current = listSets(input.exercise).find((s) => s.id === input.id);
+  await getSyncManager().enqueue('sets', 'upsert', {
+    id: input.id,
+    exercise: input.exercise,
+    metricSet: input.metricSet ?? current?.metricSet ?? 'strength',
+    fields: { ...current?.fields, ...input.fields },
+    position: input.position ?? current?.position ?? 0,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+}
+
+/** Soft-delete une série (jamais de hard-delete). */
+export async function deleteSet(input: { id: string; userId: string }): Promise<void> {
+  await getSyncManager().enqueue('sets', 'upsert', {
+    id: input.id,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: true,
+  });
+}
+
+/** Duplique une séance (+ exercices + séries) avec de nouveaux ids. Retourne l'id de la nouvelle séance. */
+export async function duplicateWorkout(input: {
+  id: string;
+  at: string;
+  status: WorkoutStatus;
+  userId: string;
+}): Promise<string> {
+  const mgr = getSyncManager();
+  const now = Date.now();
+  const base = { user: input.userId, clientUpdatedAt: now, deleted: false };
+  const source = listWorkouts().find((w) => w.id === input.id);
+  const newWorkoutId = newId();
+
+  await mgr.enqueue('workouts', 'upsert', {
+    id: newWorkoutId,
+    at: input.at,
+    date: input.at.slice(0, 10),
+    gym: source?.gym,
+    notes: source?.notes,
+    status: input.status,
+    source: source?.source ?? 'manual',
+    ...base,
+  });
+
+  for (const exercise of listExercises(input.id)) {
+    const newExerciseId = newId();
+    await mgr.enqueue('exercises', 'upsert', {
+      id: newExerciseId,
+      workout: newWorkoutId,
+      equipment: exercise.equipment,
+      name: exercise.name,
+      position: exercise.position,
+      source: exercise.source,
+      ...base,
+    });
+
+    for (const set of listSets(exercise.id)) {
+      await mgr.enqueue('sets', 'upsert', {
+        id: newId(),
+        exercise: newExerciseId,
+        metricSet: set.metricSet,
+        fields: set.fields,
+        position: set.position,
+        ...base,
+      });
+    }
+  }
+
+  return newWorkoutId;
 }

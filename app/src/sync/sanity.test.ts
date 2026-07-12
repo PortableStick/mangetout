@@ -57,4 +57,55 @@ describe('sanity guardrails', () => {
   it('collection sans schéma de sanité → seules les métadonnées comptent', () => {
     expect(isSane('workouts', base({ anything: 'ok' }), NOW)).toBe(true);
   });
+
+  describe('sets — format legacy {reps, weight_kg}', () => {
+    it('accepte une série legacy plausible', () => {
+      expect(isSane('sets', base({ reps: 10, weight_kg: 50 }), NOW)).toBe(true);
+    });
+
+    it('rejette une série legacy hors bornes', () => {
+      expect(isSane('sets', base({ reps: -5, weight_kg: 50 }), NOW)).toBe(false);
+      expect(isSane('sets', base({ reps: 10, weight_kg: 5000 }), NOW)).toBe(false);
+    });
+  });
+
+  describe('sets — format typé {metricSet, fields} (Task 18.3)', () => {
+    it('accepte une série typée valide (preset strength)', () => {
+      expect(
+        isSane('sets', base({ metricSet: 'strength', fields: { reps: 10, weight_kg: 50 } }), NOW)
+      ).toBe(true);
+    });
+
+    it('rejette une série typée hors bornes (setSchema)', () => {
+      const violations = sanityCheck(
+        'sets',
+        base({ metricSet: 'strength', fields: { reps: 5_000_000, weight_kg: -50 } }),
+        NOW
+      );
+      expect(violations.length).toBeGreaterThan(0);
+      expect(isSane('sets', base({ metricSet: 'strength', fields: { reps: 5_000_000, weight_kg: -50 } }), NOW)).toBe(
+        false
+      );
+    });
+
+    it('rejette une série typée avec des champs requis manquants (fields vide)', () => {
+      expect(isSane('sets', base({ metricSet: 'strength', fields: {} }), NOW)).toBe(false);
+    });
+
+    it('rejette un metricSet inconnu', () => {
+      expect(isSane('sets', base({ metricSet: 'not_a_preset', fields: { reps: 10 } }), NOW)).toBe(false);
+    });
+
+    it('accepte une série cardio PARTIELLE réaliste (durée+distance, sans watts/spm/split) — FIX perte de données', () => {
+      expect(
+        isSane('sets', base({ metricSet: 'cardio_row', fields: { duration_s: 1200, distance_m: 5000 } }), NOW)
+      ).toBe(true);
+    });
+
+    it('rejette toujours une série cardio sans son champ primaire (duration_s manquant)', () => {
+      expect(
+        isSane('sets', base({ metricSet: 'cardio_row', fields: { distance_m: 5000 } }), NOW)
+      ).toBe(false);
+    });
+  });
 });

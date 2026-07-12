@@ -1,5 +1,7 @@
 /** Séances, salles et équipements. */
 
+import type { MetricKey, MetricSetKey } from './metrics';
+
 export type GymType = 'chain' | 'home';
 
 export type MuscleGroup =
@@ -43,13 +45,21 @@ export interface Equipment {
   name: string;
   category: EquipmentCategory;
   muscleGroups: MuscleGroup[];
+  /** Preset de champs de saisie de séries (défaut rétro-compat : 'strength'). */
+  metricSet: MetricSetKey;
 }
+
+export type WorkoutStatus = 'planned' | 'in_progress' | 'done';
+export type WorkoutSource = 'generated' | 'manual' | 'vision';
 
 export interface Workout {
   id: string;
-  date: string; // YYYY-MM-DD
+  at: string; // ISO datetime (source de vérité)
+  date: string; // YYYY-MM-DD dérivé de `at` (conservé pour compat/affichage)
   gym: string; // gym id
   notes?: string;
+  status: WorkoutStatus;
+  source: WorkoutSource;
 }
 
 export interface Exercise {
@@ -58,12 +68,15 @@ export interface Exercise {
   equipment?: string; // equipment id
   name: string;
   position: number;
+  source?: WorkoutSource; // provenance fine (optionnel)
 }
 
 export interface ExerciseSet {
   id: string;
   exercise: string; // exercise id
-  reps: number;
-  weight_kg: number;
+  /** Preset de champs (défaut rétro-compat : 'strength'). */
+  metricSet: MetricSetKey;
+  /** Valeurs saisies, une par `MetricField` du preset. */
+  fields: Partial<Record<MetricKey, number | string>>;
   position: number;
 }

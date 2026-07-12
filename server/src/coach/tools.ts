@@ -16,6 +16,17 @@ const macros = {
 const GYM_TYPE = z.enum(['chain', 'home']);
 const CATEGORY = z.enum(['machine', 'free_weight', 'cardio', 'functional']);
 const MUSCLES = z.array(z.string()).max(20);
+/** Preset fermé de métriques (app/src/features/workouts/metrics.ts) : l'IA choisit, n'invente jamais. */
+const METRIC_SET = z.enum([
+  'strength',
+  'bodyweight',
+  'assisted',
+  'isometric',
+  'cardio_row',
+  'cardio_bike',
+  'cardio_run',
+  'cardio_generic',
+]);
 /** Id PocketBase généré par newId() (app/src/lib/id.ts) : exactement 15 caractères [a-z0-9]. */
 const PB_ID = z.string().regex(/^[a-z0-9]{15}$/);
 
@@ -105,7 +116,26 @@ export const TOOLS: Record<string, ToolDef> = {
       name: z.string().min(1).max(80),
       category: CATEGORY,
       muscleGroups: MUSCLES,
+      metricSet: METRIC_SET.optional(),
     }),
+  },
+  update_equipment: {
+    kind: 'action',
+    collection: 'equipment',
+    op: 'update',
+    description: 'Modifie du matériel (nom, catégorie, groupes musculaires et/ou preset de métriques)',
+    args: z
+      .object({
+        id: PB_ID,
+        name: z.string().min(1).max(80).optional(),
+        category: CATEGORY.optional(),
+        muscleGroups: MUSCLES.optional(),
+        metricSet: METRIC_SET.optional(),
+      })
+      .refine(
+        (v) => v.name !== undefined || v.category !== undefined || v.muscleGroups !== undefined || v.metricSet !== undefined,
+        { message: 'au moins un champ' }
+      ),
   },
   remove_equipment: {
     kind: 'action',

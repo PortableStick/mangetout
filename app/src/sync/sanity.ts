@@ -1,6 +1,19 @@
 import { z } from 'zod';
 
+import { setSchema, type MetricSetKey } from '@/features/workouts/metrics';
+
 import type { SyncRecord } from './types';
+
+const METRIC_SET_KEYS = [
+  'strength',
+  'bodyweight',
+  'assisted',
+  'isometric',
+  'cardio_row',
+  'cardio_bike',
+  'cardio_run',
+  'cardio_generic',
+] as const satisfies readonly MetricSetKey[];
 
 /**
  * Garde-fous de cohérence AVANT toute écriture (push vers le homelab ou pull en local).
@@ -29,10 +42,32 @@ const SANITY: Record<string, z.ZodType> = {
     carbs_100g: num.min(0).max(100),
     fat_100g: num.min(0).max(100),
   }),
-  sets: z.object({
-    reps: num.min(0).max(1000),
-    weight_kg: num.min(0).max(1000),
-  }),
+  // Séries : format legacy `{ reps, weight_kg }` à plat, OU format typé par `metric_set`
+  // (`{ metricSet, fields }`, Task 18.3). Pour la branche typée, les bornes fines par champ
+  // ET les champs requis du preset sont revalidés ici via `setSchema` (Task 18.3 fix) —
+  // sans quoi seule la forme (record string→number|string) était vérifiée, sans bornes ni
+  // champs requis.
+  sets: z.union([
+    z.object({ reps: num.min(0).max(1000), weight_kg: num.min(0).max(1000) }).passthrough(),
+    z
+      .object({
+        metricSet: z.enum(METRIC_SET_KEYS),
+        fields: z.record(z.string(), z.union([num, z.string()])),
+      })
+      .passthrough()
+      .superRefine((data, ctx) => {
+        const result = setSchema(data.metricSet as MetricSetKey).safeParse(data.fields);
+        if (!result.success) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['fields'],
+            message: `bornes/champs invalides pour metricSet=${data.metricSet} : ${result.error.issues
+              .map((i) => `${i.path.join('.') || 'fields'}: ${i.message}`)
+              .join('; ')}`,
+          });
+        }
+      }),
+  ]),
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

@@ -88,6 +88,34 @@ describe('outils salles/équipement', () => {
     ).toBe(false);
   });
 
+  it('add_equipment accepte un metricSet du preset fermé et rejette les valeurs inconnues', () => {
+    expect(
+      validateToolCall('add_equipment', {
+        gymId: GYM_ID,
+        name: 'Rameur',
+        category: 'cardio',
+        muscleGroups: ['fullbody'],
+        metricSet: 'cardio_row',
+      }).ok
+    ).toBe(true);
+    expect(
+      validateToolCall('add_equipment', {
+        gymId: GYM_ID,
+        name: 'Rameur',
+        category: 'cardio',
+        muscleGroups: ['fullbody'],
+        metricSet: 'bogus',
+      }).ok
+    ).toBe(false);
+  });
+
+  it('update_equipment exige un id + au moins un champ, valide metricSet', () => {
+    expect(validateToolCall('update_equipment', { id: EQ_ID, metricSet: 'cardio_bike' }).ok).toBe(true);
+    expect(validateToolCall('update_equipment', { id: EQ_ID, name: 'Presse inclinée' }).ok).toBe(true);
+    expect(validateToolCall('update_equipment', { id: EQ_ID }).ok).toBe(false);
+    expect(validateToolCall('update_equipment', { id: EQ_ID, metricSet: 'bogus' }).ok).toBe(false);
+  });
+
   it('rejette un id malformé (anti-injection de filtre PocketBase)', () => {
     const injected = 'x" || user!=""';
     expect(validateToolCall('delete_gym', { id: injected }).ok).toBe(false);
@@ -149,6 +177,49 @@ describe('applyAction — salles/équipement (create/update/delete owner-scoped)
     const body = JSON.parse(calls[0]![1].body);
     expect(body.user).toBe('realUser');
     expect(body.gym).toBe(GYM_ID);
+  });
+
+  it('add_equipment : sans metricSet, l’enregistrement POSTé applique le défaut « strength »', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq1' }) })) as unknown as typeof fetch;
+    const res = await applyAction(
+      'add_equipment',
+      { gymId: GYM_ID, name: 'Presse', category: 'machine', muscleGroups: ['legs'] },
+      { ...ctx, fetchImpl },
+      NOW
+    );
+    expect(res.ok).toBe(true);
+    const body = JSON.parse(
+      (fetchImpl as unknown as { mock: { calls: [string, { body: string }][] } }).mock.calls[0]![1].body
+    );
+    expect(body.metricSet).toBe('strength');
+  });
+
+  it('add_equipment : avec metricSet fourni, l’enregistrement le persiste et reste owner-scoped', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq2' }) })) as unknown as typeof fetch;
+    const res = await applyAction(
+      'add_equipment',
+      { gymId: GYM_ID, name: 'Rameur', category: 'cardio', muscleGroups: ['fullbody'], metricSet: 'cardio_row' },
+      { ...ctx, fetchImpl },
+      NOW
+    );
+    expect(res.ok).toBe(true);
+    const body = JSON.parse(
+      (fetchImpl as unknown as { mock: { calls: [string, { body: string }][] } }).mock.calls[0]![1].body
+    );
+    expect(body.metricSet).toBe('cardio_row');
+    expect(body.user).toBe('realUser');
+  });
+
+  it('update_equipment : PATCH sans champ user, avec metricSet fourni', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: EQ_ID }) })) as unknown as typeof fetch;
+    const res = await applyAction('update_equipment', { id: EQ_ID, metricSet: 'cardio_bike' }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: EQ_ID });
+    const calls = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls;
+    expect(calls[0]![0]).toContain(`/collections/equipment/records/${EQ_ID}`);
+    expect(calls[0]![1].method).toBe('PATCH');
+    const body = JSON.parse(calls[0]![1].body);
+    expect(body.user).toBeUndefined();
+    expect(body.metricSet).toBe('cardio_bike');
   });
 
   it('update_gym : PATCH sans champ user, avec les champs fournis', async () => {
