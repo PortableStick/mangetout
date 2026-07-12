@@ -20,6 +20,28 @@ const INK2 = 0x24261f;
 const VOLT = 0xcdfb49;
 const WARN = 0xffb03a;
 
+/**
+ * Shim `canvas` pour `THREE.WebGLRenderer` sous React Native : sans lui, three tente
+ * `document.createElement('canvas')` (API web absente) → « Property 'document' doesn't exist ».
+ * On fournit un objet minimal exposant le contexte GL d'expo-gl.
+ */
+function makeCanvas(
+  gl: ExpoWebGLRenderingContext,
+  width: number,
+  height: number
+): HTMLCanvasElement {
+  return {
+    width,
+    height,
+    clientWidth: width,
+    clientHeight: height,
+    style: {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    getContext: () => gl,
+  } as unknown as HTMLCanvasElement;
+}
+
 interface Mats {
   body: THREE.MeshLambertMaterial;
   steel: THREE.MeshLambertMaterial;
@@ -547,6 +569,7 @@ export function CoachCore({ state = 'brief', height = 200 }: CoachCoreProps) {
     // expo-gl fournit un contexte WebGL2 ; three attend WebGLRenderingContext dans ses types — cast
     // nécessaire, pattern documenté expo-three (identique à `_poc-3d.tsx`).
     const renderer = new THREE.WebGLRenderer({
+      canvas: makeCanvas(gl, width, glHeight),
       context: gl as unknown as WebGLRenderingContext,
       antialias: true,
     });
@@ -638,6 +661,7 @@ function MovementDemoView({ exercise, tempo, height }: MovementDemoViewProps) {
         seated ? -0.2 : 0.3
       );
       const renderer = new THREE.WebGLRenderer({
+        canvas: makeCanvas(gl, width, glHeight),
         context: gl as unknown as WebGLRenderingContext,
         antialias: true,
       });
