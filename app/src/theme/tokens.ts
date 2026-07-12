@@ -131,7 +131,7 @@ export const fontFamily = {
 } as const;
 
 /** Traitements du handoff (leading/tracking), utilisés pour dériver l'échelle typo ci-dessous. */
-const LEADING = { display: 0.92, tight: 1.15, body: 1.5 } as const;
+const LEADING = { display: 1.05, tight: 1.15, body: 1.5 } as const;
 const TRACKING = { display: 0.01, label: 0.14 } as const;
 
 /** `fontSize * leading`, arrondi au pixel. */
