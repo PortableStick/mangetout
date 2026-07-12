@@ -101,18 +101,12 @@ export default function SettingsScreen() {
 
       <Card>
         <Text variant="headline">Apparence</Text>
-        <Text variant="footnote" color="textTertiary">
-          Choisis l’apparence de l’app.
+        <Text variant="body" style={{ marginTop: theme.spacing.xs }}>
+          Sombre (uniquement)
         </Text>
-        <SegmentedControl
-          options={[
-            { label: 'Système', value: 'system' },
-            { label: 'Clair', value: 'light' },
-            { label: 'Sombre', value: 'dark' },
-          ]}
-          value={theme.mode}
-          onChange={theme.setMode}
-        />
+        <Text variant="footnote" color="textTertiary">
+          L’app utilise un thème sombre unique — pas de mode clair ni système.
+        </Text>
       </Card>
 
       <Card>

@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
@@ -26,6 +27,7 @@ interface Bubble extends ChatTurn {
 
 export default function CoachScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const coach = useCoach();
   const apply = useApplyAction();
   const [input, setInput] = useState('');
@@ -138,6 +140,20 @@ export default function CoachScreen() {
             <Text variant="display" style={{ marginTop: theme.spacing.xs }}>
               Brief de séance
             </Text>
+          </View>
+          <View
+            style={{
+              position: 'absolute',
+              right: theme.spacing.lg,
+              bottom: theme.spacing.md,
+            }}
+          >
+            <IconButton
+              name="barbell-outline"
+              tone="neutral"
+              accessibilityLabel="Bibliothèque de gestes"
+              onPress={() => router.push('/moves')}
+            />
           </View>
         </View>
 

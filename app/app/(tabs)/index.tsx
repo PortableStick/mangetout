@@ -162,9 +162,9 @@ export default function TodayScreen() {
           fullWidth
           size="lg"
           onPress={() =>
-            sessionWorkout
-              ? router.push({ pathname: '/workout/[id]', params: { id: sessionWorkout.id } })
-              : router.push('/workout-new')
+            // TODO(dette assumée) : `/session` affiche encore des données représentatives —
+            // câbler à la vraie séance / useWorkoutDetail(sessionWorkout.id).
+            sessionWorkout ? router.push('/session') : router.push('/workout-new')
           }
         />
       </Card>
