@@ -11,7 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { today } from '@/features/food/useFoodLog';
 import { useCoaching } from '@/features/stats/useCoaching';
 import type { ExerciseSet } from '@/features/workouts/types';
-import { listExercises, listSets, listWorkouts } from '@/features/workouts/repository';
+import { weeklyVolumeKg, weightKeyFor } from '@/features/workouts/volume';
 import { useGyms, useWorkoutDetail, useWorkouts } from '@/features/workouts/useWorkouts';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -57,13 +57,7 @@ function exerciseSummary(sets: ExerciseSet[]): string {
   if (sets.length === 0) return '—';
   const first = sets[0]!;
   const reps = first.fields.reps;
-  const weightKey =
-    first.metricSet === 'bodyweight'
-      ? 'added_weight_kg'
-      : first.metricSet === 'assisted'
-        ? 'assist_weight_kg'
-        : 'weight_kg';
-  const weight = first.fields[weightKey];
+  const weight = first.fields[weightKeyFor(first.metricSet)];
   if (reps !== undefined && weight !== undefined) {
     return `${sets.length}×${reps} · ${weight} kg`;
   }
@@ -71,34 +65,13 @@ function exerciseSummary(sets: ExerciseSet[]): string {
   return `${sets.length} série${sets.length > 1 ? 's' : ''}`;
 }
 
-/** Volume hebdo simple (Σ reps × charge) des séries de séances `done` des 7 derniers jours. `undefined` si aucune donnée. */
+/** Volume hebdo (Σ reps × charge, résolu par `metricSet` — cf. `volume.ts`) des séances `done`
+ * des 7 derniers jours. `null` si aucune donnée exploitable. */
 function useWeeklyVolumeKg() {
   return useQuery({
     queryKey: ['today-weekly-volume-kg'],
-    queryFn: async (): Promise<number | null> => {
-      const now = Date.now();
-      const workouts = listWorkouts().filter((w) => {
-        if (w.status !== 'done') return false;
-        const t = new Date(w.at).getTime();
-        return Number.isFinite(t) && t <= now && now - t <= 7 * MS_PER_DAY;
-      });
-
-      let total = 0;
-      let hasData = false;
-      for (const workout of workouts) {
-        for (const exercise of listExercises(workout.id)) {
-          for (const set of listSets(exercise.id)) {
-            const reps = Number(set.fields.reps);
-            const weight = Number(set.fields.weight_kg);
-            if (Number.isFinite(reps) && Number.isFinite(weight)) {
-              total += reps * weight;
-              hasData = true;
-            }
-          }
-        }
-      }
-      return hasData ? total : null;
-    },
+    queryFn: async (): Promise<number | null> => weeklyVolumeKg(),
+    staleTime: 60_000,
   });
 }
 

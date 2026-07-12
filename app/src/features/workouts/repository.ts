@@ -279,6 +279,14 @@ export function listExercises(workoutId: string): Exercise[] {
     .sort((a, b) => a.position - b.position);
 }
 
+/** Tous les exercices (toutes séances confondues), UNE seule lecture SQL.
+ * À utiliser quand on doit agréger sur plusieurs séances (ex. volume hebdo) : évite de refaire
+ * un `SELECT` complet de la table `exercises` par séance (voir `listExercises`, adapté au cas
+ * « un seul workout »). Non trié : à regrouper/trier par l'appelant si besoin. */
+export function listAllExercises(): Exercise[] {
+  return rows('exercises').map((r) => ({ id: r.id, ...(r.payload ?? {}) }) as unknown as Exercise);
+}
+
 /** Mappe un record brut vers `ExerciseSet`, avec rétro-compat : anciens enregistrements
  * `{ reps, weight_kg }` (sans `fields`) → `{ metricSet: 'strength', fields: { reps, weight_kg } }`. */
 function mapSet(r: { id: string; payload: unknown }): ExerciseSet {
@@ -306,6 +314,13 @@ export function listSets(exerciseId: string): ExerciseSet[] {
     .map(mapSet)
     .filter((s) => s.exercise === exerciseId)
     .sort((a, b) => a.position - b.position);
+}
+
+/** Toutes les séries (tous exercices confondus), UNE seule lecture SQL.
+ * Même rationale que `listAllExercises` : pour agréger sur plusieurs exercices/séances sans
+ * refaire un `SELECT` complet de la table `sets` par exercice. Non trié. */
+export function listAllSets(): ExerciseSet[] {
+  return rows('sets').map(mapSet);
 }
 
 /** Met à jour une séance : ne remplace que les champs fournis, merge avec le record existant. */

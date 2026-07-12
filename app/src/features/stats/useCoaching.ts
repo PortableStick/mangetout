@@ -17,7 +17,8 @@ import { today, useFoodEntries } from '@/features/food/useFoodLog';
 import { useGoals } from '@/features/goals/useGoals';
 import { useWeightEntries } from '@/features/weight/useWeight';
 import { weightStats } from '@/features/weight/weight';
-import { listEquipment, listExercises, listGyms, listSets, listWorkouts } from '@/features/workouts/repository';
+import { listEquipment, listExercises, listGyms, listSets } from '@/features/workouts/repository';
+import { doneWorkoutsSince } from '@/features/workouts/volume';
 
 import { buildCoachingRecos, type WeeklyVolumeInput } from './coachingAggregate';
 import type { GoalMode, Reco } from './coaching';
@@ -43,11 +44,7 @@ function useWeeklyWorkoutVolume() {
     queryKey: ['coaching-weekly-volume'],
     queryFn: async (): Promise<WeeklyVolumeInput> => {
       const now = Date.now();
-      const workouts = listWorkouts().filter((w) => {
-        if (w.status !== 'done') return false;
-        const t = new Date(w.at).getTime();
-        return Number.isFinite(t) && t <= now && now - t <= 7 * MS_PER_DAY;
-      });
+      const workouts = doneWorkoutsSince(now - 7 * MS_PER_DAY, now);
 
       const exercises = workouts.flatMap((w) =>
         listExercises(w.id).map((e) => ({
