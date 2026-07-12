@@ -48,6 +48,7 @@ export default function GymsScreen() {
         <Pressable
           onPress={() => router.push('/gym-edit')}
           accessibilityRole="button"
+          accessibilityLabel="Ajouter une salle"
           style={{
             width: 44,
             height: 44,

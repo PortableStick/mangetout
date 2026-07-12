@@ -232,8 +232,7 @@ export default function GymEditScreen() {
       {isEdit ? (
         <Button
           label="Supprimer la salle"
-          variant="secondary"
-          style={{ backgroundColor: theme.colors.danger }}
+          variant="danger"
           loading={deleteGym.isPending}
           onPress={confirmDeleteGym}
         />
@@ -249,6 +248,8 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={{
         paddingVertical: 8,
         paddingHorizontal: theme.spacing.md,
