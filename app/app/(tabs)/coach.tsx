@@ -16,6 +16,7 @@ import {
   type ChatTurn,
   type CoachResult,
 } from '@/features/ai/useAi';
+import { CoachCore } from '@/features/coach3d/CoachRig';
 import { useTheme } from '@/theme/ThemeProvider';
 import { withAlpha } from '@/theme/tokens';
 
@@ -100,7 +101,7 @@ export default function CoachScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Hero — bandeau du coach. Anneau volt central = PLACEHOLDER du rig 3D (M24). */}
+        {/* Hero — bandeau du coach. Rig 3D procédural (M24) : idle en `brief`, accéléré/teinté warn en `thinking`. */}
         <View
           style={{
             height: 200,
@@ -122,15 +123,7 @@ export default function CoachScreen() {
             }}
           />
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <View
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: theme.radius.pill,
-                borderWidth: 2,
-                borderColor: withAlpha(theme.colors.accent, 0.3),
-              }}
-            />
+            <CoachCore state={coach.isPending ? 'thinking' : 'brief'} height={200} />
           </View>
           <View
             style={{

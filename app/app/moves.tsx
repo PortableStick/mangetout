@@ -4,6 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { MovementDemo, type ExerciseId } from '@/features/coach3d/CoachRig';
 import { MOVE_TEMPOS, MOVES, type MoveTempoPreset } from '@/features/workouts/moves-data';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -19,12 +20,17 @@ function first<T>(arr: T[]): T {
 const DEFAULT_MOVE = first(MOVES);
 const DEFAULT_TEMPO = first(MOVE_TEMPOS);
 
+/** `moves-data.ts` type `id` en `string` ; le rig 3D n'accepte que les 3 exercices connus. */
+function toExerciseId(id: string): ExerciseId {
+  return id === 'butterfly' || id === 'rower' ? id : 'dumbbells';
+}
+
 /**
  * Écran « Bibliothèque de gestes » — copie fidèle de `ui_kits/app/MovesScreen.jsx` (handoff design
  * system) : sélection d'un exercice (chips), choix d'un tempo d'exécution (presets), cue associé.
  *
- * La zone de démo (`MovementDemo`, rig 3D Three.js dans le handoff) est un **placeholder** ici —
- * anneau volt discret + mention « aperçu 3D bientôt ». Le vrai rig arrivera en M24.
+ * La zone de démo (`MovementDemo`, rig 3D `three`/`expo-gl`, M24) montre la machine + l'athlète
+ * exécutant le mouvement sélectionné, pilotée par le tempo choisi.
  */
 export default function MovesScreen() {
   const theme = useTheme();
@@ -68,22 +74,12 @@ export default function MovesScreen() {
           />
         </View>
 
-        {/* Placeholder du rig 3D — anneau/silhouette volt discret centré. Vrai rig en M24. */}
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm }}>
-          <View
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: theme.radius.pill,
-              borderWidth: 2,
-              borderColor: theme.colors.accent,
-              opacity: 0.6,
-            }}
-          />
-          <Text variant="label" color="textTertiary">
-            Aperçu 3D bientôt
-          </Text>
-        </View>
+        {/* Rig 3D procédural (M24) : la machine + l'athlète exécutant le mouvement, au tempo choisi. */}
+        <MovementDemo
+          exercise={toExerciseId(current.id)}
+          tempo={tempo.tempo}
+          height={DEMO_HEIGHT}
+        />
 
         <View
           style={{
