@@ -1,6 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Image, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -36,18 +35,10 @@ export default function LoginScreen() {
     <Screen>
       <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.xl }}>
         <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: theme.radius.xl,
-              backgroundColor: theme.colors.accent,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="leaf" size={38} color={theme.colors.onAccent} />
-          </View>
+          <Image
+            source={require('../assets/icon.png')}
+            style={{ width: 72, height: 72, borderRadius: theme.radius.xl }}
+          />
           <Text variant="largeTitle" center>
             mangetout
           </Text>
