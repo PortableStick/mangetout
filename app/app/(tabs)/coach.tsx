@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { Markdown } from '@/components/ui/Markdown';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { PlaceholderScreen } from '@/components/PlaceholderScreen';
@@ -100,7 +101,11 @@ export default function CoachScreen() {
                 maxWidth: '90%',
               }}
             >
-              <Text variant="body">{b.content}</Text>
+              {b.role === 'assistant' ? (
+                <Markdown>{b.content}</Markdown>
+              ) : (
+                <Text variant="body">{b.content}</Text>
+              )}
               {b.proposal ? (
                 <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
                   <Text variant="footnote" color="textTertiary">
