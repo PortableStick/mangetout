@@ -241,6 +241,30 @@ describe('repository — statut/provenance/datetime + CRUD séances', () => {
     );
   });
 
+  it('updateExercise préserve `source` du record existant quand non fourni (pas de perte de provenance)', async () => {
+    mockAll.mockReturnValue([
+      {
+        id: 'e1',
+        payload: { workout: 'w1', name: 'Squat', position: 0, equipment: 'eq1', source: 'generated' },
+      },
+    ]);
+
+    await updateExercise({ id: 'e1', workout: 'w1', position: 2, userId: 'u1' });
+
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'exercises',
+      'upsert',
+      expect.objectContaining({
+        id: 'e1',
+        workout: 'w1',
+        position: 2,
+        source: 'generated',
+        user: 'u1',
+        deleted: false,
+      })
+    );
+  });
+
   it('deleteExercise cascade en soft-delete sur ses séries', async () => {
     mockAll.mockReturnValueOnce([
       { id: 's1', payload: { exercise: 'e1', reps: 10, weight_kg: 50, position: 0 } },

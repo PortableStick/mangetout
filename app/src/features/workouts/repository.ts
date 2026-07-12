@@ -224,7 +224,7 @@ function mapWorkout(r: { id: string; payload: unknown }): Workout {
     id: r.id,
     ...p,
     at,
-    date: at.slice(0, 10) || (p.date as string),
+    date: at.slice(0, 10),
     status: (p.status as WorkoutStatus | undefined) ?? 'done',
     source: (p.source as WorkoutSource | undefined) ?? 'manual',
   } as unknown as Workout;
@@ -314,6 +314,7 @@ export async function updateExercise(input: {
   name?: string;
   equipment?: string;
   position?: number;
+  source?: WorkoutSource;
   userId: string;
 }): Promise<void> {
   const current = listExercises(input.workout).find((e) => e.id === input.id);
@@ -323,6 +324,7 @@ export async function updateExercise(input: {
     equipment: input.equipment ?? current?.equipment,
     name: input.name ?? current?.name,
     position: input.position ?? current?.position ?? 0,
+    source: input.source ?? current?.source,
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
