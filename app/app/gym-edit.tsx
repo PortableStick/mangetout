@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
 import { MUSCLE_LABELS, type Equipment, type EquipmentCategory, type GymType, type MuscleGroup } from '@/features/workouts/types';
 import {
@@ -130,20 +131,14 @@ export default function GymEditScreen() {
         <Text variant="footnote" color="textTertiary">
           Type
         </Text>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-          <Button
-            label="Chaîne"
-            variant={gymType === 'chain' ? 'primary' : 'secondary'}
-            onPress={() => setGymType('chain')}
-            style={{ flex: 1 }}
-          />
-          <Button
-            label="Perso"
-            variant={gymType === 'home' ? 'primary' : 'secondary'}
-            onPress={() => setGymType('home')}
-            style={{ flex: 1 }}
-          />
-        </View>
+        <SegmentedControl
+          options={[
+            { label: 'Chaîne', value: 'chain' },
+            { label: 'Perso', value: 'home' },
+          ]}
+          value={gymType}
+          onChange={setGymType}
+        />
         <Button
           label={isEdit ? 'Enregistrer' : 'Créer la salle'}
           disabled={!canSaveGym}

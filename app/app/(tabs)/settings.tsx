@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -85,23 +86,15 @@ export default function SettingsScreen() {
         <Text variant="footnote" color="textTertiary">
           Choisis l’apparence de l’app.
         </Text>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-          {(
-            [
-              { value: 'system', label: 'Système' },
-              { value: 'light', label: 'Clair' },
-              { value: 'dark', label: 'Sombre' },
-            ] as const
-          ).map(({ value, label }) => (
-            <Button
-              key={value}
-              label={label}
-              variant={theme.mode === value ? 'primary' : 'secondary'}
-              onPress={() => theme.setMode(value)}
-              style={{ flex: 1 }}
-            />
-          ))}
-        </View>
+        <SegmentedControl
+          options={[
+            { label: 'Système', value: 'system' },
+            { label: 'Clair', value: 'light' },
+            { label: 'Sombre', value: 'dark' },
+          ]}
+          value={theme.mode}
+          onChange={theme.setMode}
+        />
       </Card>
 
       <Card>

@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useGyms, useSeedGyms, useWorkouts } from '@/features/workouts/useWorkouts';
@@ -61,13 +62,12 @@ export default function WorkoutsScreen() {
       </View>
 
       {workouts.length === 0 ? (
-        <Card>
-          <Text variant="headline">Aucune séance</Text>
-          <Text variant="subhead" color="textSecondary">
-            Crée ta première séance : choisis une salle et génère ou compose tes exercices.
-          </Text>
-          <Button label="Nouvelle séance" onPress={() => router.push('/workout-new')} style={{ marginTop: 8 }} />
-        </Card>
+        <EmptyState
+          icon="fitness-outline"
+          title="Aucune séance"
+          subtitle="Crée ta première séance : choisis une salle et génère ou compose tes exercices."
+          action={<Button label="Nouvelle séance" onPress={() => router.push('/workout-new')} />}
+        />
       ) : (
         workouts.map((w) => (
           <Card key={w.id}>

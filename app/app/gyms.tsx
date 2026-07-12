@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useEquipment, useGyms, useSeedGyms } from '@/features/workouts/useWorkouts';
@@ -57,19 +58,18 @@ export default function GymsScreen() {
       </View>
 
       {gyms.length === 0 ? (
-        <Card>
-          <Text variant="headline">Aucune salle</Text>
-          <Text variant="subhead" color="textSecondary">
-            On crée deux salles par défaut : Basic-Fit (équipements pré-remplis) et Salle perso (à
-            compléter). Tu pourras les modifier ensuite.
-          </Text>
-          <Button
-            label="Créer mes salles par défaut"
-            loading={seed.isPending}
-            onPress={() => seed.mutate()}
-            style={{ marginTop: 8 }}
-          />
-        </Card>
+        <EmptyState
+          icon="barbell-outline"
+          title="Aucune salle"
+          subtitle="On crée deux salles par défaut : Basic-Fit (équipements pré-remplis) et Salle perso (à compléter). Tu pourras les modifier ensuite."
+          action={
+            <Button
+              label="Créer mes salles par défaut"
+              loading={seed.isPending}
+              onPress={() => seed.mutate()}
+            />
+          }
+        />
       ) : (
         gyms.map((g) => <GymRow key={g.id} gym={g} />)
       )}

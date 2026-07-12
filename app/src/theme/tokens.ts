@@ -71,6 +71,15 @@ const dark: Palette = {
 
 export const palettes: Record<ColorScheme, Palette> = { light, dark };
 
+/** Dérive une teinte à faible opacité depuis une couleur hex `#rrggbb` de la palette. */
+export function withAlpha(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '');
+  const r = Number.parseInt(clean.substring(0, 2), 16);
+  const g = Number.parseInt(clean.substring(2, 4), 16);
+  const b = Number.parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /** Échelle d'espacement (base 4). */
 export const spacing = {
   xs: 4,
