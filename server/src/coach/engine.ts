@@ -31,6 +31,16 @@ export function proposalSummary(tool: string, args: Record<string, unknown>): st
       return `Enregistrer une pesée de ${args.weight_kg} kg.`;
     case 'update_goals':
       return `Mettre à jour tes objectifs (${args.kcal ?? '—'} kcal).`;
+    case 'add_gym':
+      return `Créer la salle « ${args.name} » (${args.gymType === 'chain' ? 'chaîne' : 'perso'}).`;
+    case 'update_gym':
+      return `Modifier la salle${args.name ? ` « ${args.name} »` : ''}.`;
+    case 'delete_gym':
+      return `Supprimer une salle et son équipement.`;
+    case 'add_equipment':
+      return `Ajouter l'équipement « ${args.name} » à une salle.`;
+    case 'remove_equipment':
+      return `Retirer un équipement d'une salle.`;
     default:
       return `Action : ${tool}.`;
   }

@@ -53,9 +53,28 @@ export function buildRecord(
         carbs_g: args.carbs_g,
         fat_g: args.fat_g,
       };
+    case 'add_gym':
+      return { ...base, name: args.name, gymType: args.gymType };
+    case 'add_equipment':
+      return { ...base, gym: args.gymId, name: args.name, category: args.category, muscleGroups: args.muscleGroups };
     default:
       return base;
   }
+}
+
+/**
+ * Construit le PATCH d'une action de mise à jour/suppression. SÉCURITÉ : ne contient
+ * JAMAIS le champ `user` — l'owner-scoping d'un enregistrement existant ne se modifie pas.
+ */
+function buildPatch(tool: string, args: Record<string, unknown>, now: number): Record<string, unknown> {
+  if (tool === 'delete_gym' || tool === 'remove_equipment') return { deleted: true, clientUpdatedAt: now };
+  if (tool === 'update_gym') {
+    const patch: Record<string, unknown> = { clientUpdatedAt: now };
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.gymType !== undefined) patch.gymType = args.gymType;
+    return patch;
+  }
+  return { clientUpdatedAt: now };
 }
 
 /** Exécute une action CONFIRMÉE (après validation + owner-scoping). */
@@ -70,14 +89,45 @@ export async function applyAction(
   const v = validateToolCall(tool, rawArgs);
   if (!v.ok) return { ok: false, error: v.error };
 
-  const body = buildRecord(tool, v.args as Record<string, unknown>, ctx.userId, now);
-  const res = await pbFetch(ctx, `/api/collections/${def.collection}/records`, {
-    method: 'POST',
-    body: JSON.stringify(body),
+  const op = def.op ?? 'create';
+  if (op === 'create') {
+    const body = buildRecord(tool, v.args as Record<string, unknown>, ctx.userId, now);
+    const res = await pbFetch(ctx, `/api/collections/${def.collection}/records`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return { ok: false, error: `PocketBase ${res.status}` };
+    const rec = (await res.json()) as { id?: string };
+    return { ok: true, id: rec.id ?? '' };
+  }
+
+  const id = (v.args as Record<string, unknown>).id as string;
+
+  // delete_gym : cascade soft-delete de l'équipement de la salle AVANT de supprimer la salle.
+  if (tool === 'delete_gym') {
+    const listRes = await pbFetch(
+      ctx,
+      `/api/collections/equipment/records?filter=${encodeURIComponent(`gym="${id}"`)}&perPage=200`,
+      { method: 'GET' }
+    );
+    if (listRes.ok) {
+      const listBody = (await listRes.json()) as { items?: { id: string }[] };
+      for (const it of listBody.items ?? []) {
+        await pbFetch(ctx, `/api/collections/equipment/records/${it.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ deleted: true, clientUpdatedAt: now }),
+        });
+      }
+    }
+  }
+
+  const patch = buildPatch(tool, v.args as Record<string, unknown>, now);
+  const res = await pbFetch(ctx, `/api/collections/${def.collection}/records/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
   });
   if (!res.ok) return { ok: false, error: `PocketBase ${res.status}` };
-  const rec = (await res.json()) as { id?: string };
-  return { ok: true, id: rec.id ?? '' };
+  return { ok: true, id };
 }
 
 /** Exécute un outil de LECTURE, owner-scoped (les règles PB restreignent à l'utilisateur). */

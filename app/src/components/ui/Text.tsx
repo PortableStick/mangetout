@@ -10,6 +10,7 @@ type ColorKey =
   | 'accent'
   | 'onAccent'
   | 'danger'
+  | 'onDanger'
   | 'success'
   | 'warning';
 

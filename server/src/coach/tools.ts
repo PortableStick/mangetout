@@ -13,12 +13,20 @@ const macros = {
   fat_g: z.number().min(0).max(2000).optional(),
 };
 
+const GYM_TYPE = z.enum(['chain', 'home']);
+const CATEGORY = z.enum(['machine', 'free_weight', 'cardio', 'functional']);
+const MUSCLES = z.array(z.string()).max(20);
+/** Id PocketBase généré par newId() (app/src/lib/id.ts) : exactement 15 caractères [a-z0-9]. */
+const PB_ID = z.string().regex(/^[a-z0-9]{15}$/);
+
 export interface ToolDef {
   kind: 'read' | 'action';
   description: string;
   args: z.ZodType;
   /** Collection PocketBase cible (pour les actions d'écriture). */
   collection?: string;
+  /** Type d'opération d'écriture (défaut: create). */
+  op?: 'create' | 'update' | 'delete';
 }
 
 export const TOOLS: Record<string, ToolDef> = {
@@ -59,6 +67,52 @@ export const TOOLS: Record<string, ToolDef> = {
     args: z.object(macros).refine((v) => Object.values(v).some((x) => x !== undefined), {
       message: 'au moins un objectif',
     }),
+  },
+  add_gym: {
+    kind: 'action',
+    collection: 'gyms',
+    op: 'create',
+    description: 'Crée une salle',
+    args: z.object({ name: z.string().min(1).max(80), gymType: GYM_TYPE }),
+  },
+  update_gym: {
+    kind: 'action',
+    collection: 'gyms',
+    op: 'update',
+    description: 'Modifie une salle (nom et/ou type)',
+    args: z
+      .object({
+        id: PB_ID,
+        name: z.string().min(1).max(80).optional(),
+        gymType: GYM_TYPE.optional(),
+      })
+      .refine((v) => v.name !== undefined || v.gymType !== undefined, { message: 'au moins un champ' }),
+  },
+  delete_gym: {
+    kind: 'action',
+    collection: 'gyms',
+    op: 'delete',
+    description: 'Supprime une salle (et son équipement)',
+    args: z.object({ id: PB_ID }),
+  },
+  add_equipment: {
+    kind: 'action',
+    collection: 'equipment',
+    op: 'create',
+    description: 'Ajoute du matériel à une salle',
+    args: z.object({
+      gymId: PB_ID,
+      name: z.string().min(1).max(80),
+      category: CATEGORY,
+      muscleGroups: MUSCLES,
+    }),
+  },
+  remove_equipment: {
+    kind: 'action',
+    collection: 'equipment',
+    op: 'delete',
+    description: 'Retire du matériel',
+    args: z.object({ id: PB_ID }),
   },
 };
 

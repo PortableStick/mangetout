@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -81,6 +82,22 @@ export default function SettingsScreen() {
       </Card>
 
       <Card>
+        <Text variant="headline">Apparence</Text>
+        <Text variant="footnote" color="textTertiary">
+          Choisis l’apparence de l’app.
+        </Text>
+        <SegmentedControl
+          options={[
+            { label: 'Système', value: 'system' },
+            { label: 'Clair', value: 'light' },
+            { label: 'Sombre', value: 'dark' },
+          ]}
+          value={theme.mode}
+          onChange={theme.setMode}
+        />
+      </Card>
+
+      <Card>
         <Text variant="headline">Synchronisation</Text>
         <Text variant="footnote" color="textTertiary">
           Le homelab est la source de vérité. La sync se fait automatiquement ; tu peux la forcer.
@@ -99,6 +116,7 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
 
+      <Button label="Mes salles" variant="ghost" onPress={() => router.push('/gyms')} />
       <Button label="À propos (licences, IA)" variant="ghost" onPress={() => router.push('/about')} />
       <Button label="Se déconnecter" variant="secondary" onPress={signOut} />
     </Screen>

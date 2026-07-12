@@ -31,14 +31,16 @@ export interface Palette {
   success: string;
   warning: string;
   danger: string;
+  /** Texte/icône posé sur le fond danger. */
+  onDanger: string;
   /** Ombre (couleur de base, opacité gérée par les presets). */
   shadow: string;
 }
 
 const light: Palette = {
-  background: '#F5F5F7',
+  background: '#F6F5F2',
   surface: '#FFFFFF',
-  surfaceMuted: '#EDEDF0',
+  surfaceMuted: '#ECEAE4',
   separator: 'rgba(60,60,67,0.14)',
   text: '#1C1C1E',
   textSecondary: '#3C3C43',
@@ -49,13 +51,14 @@ const light: Palette = {
   success: '#1F9E5E',
   warning: '#C77700',
   danger: '#D7382F',
+  onDanger: '#FFFFFF',
   shadow: '#000000',
 };
 
 const dark: Palette = {
   background: '#0B0B0C',
   surface: '#1C1C1E',
-  surfaceMuted: '#2C2C2E',
+  surfaceMuted: '#26262A',
   separator: 'rgba(84,84,88,0.6)',
   text: '#F5F5F7',
   textSecondary: '#EBEBF5',
@@ -66,10 +69,26 @@ const dark: Palette = {
   success: '#3DDC84',
   warning: '#FFB340',
   danger: '#FF6961',
+  onDanger: '#160B0A',
   shadow: '#000000',
 };
 
 export const palettes: Record<ColorScheme, Palette> = { light, dark };
+
+/**
+ * Dérive une teinte à faible opacité depuis une couleur hex de la palette.
+ * @param hex couleur `#rrggbb`. Toute autre forme (rgba, mot-clé, hex court…) est renvoyée telle quelle.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
+    return hex;
+  }
+  const clean = hex.replace('#', '');
+  const r = Number.parseInt(clean.substring(0, 2), 16);
+  const g = Number.parseInt(clean.substring(2, 4), 16);
+  const b = Number.parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 /** Échelle d'espacement (base 4). */
 export const spacing = {
@@ -117,7 +136,8 @@ export type TypographyVariant = keyof typeof typography;
 
 /** Presets d'ombre (profondeur douce). Android utilise elevation. */
 export function shadow(scheme: ColorScheme, level: 'sm' | 'md' | 'lg') {
-  const opacity = scheme === 'dark' ? { sm: 0.4, md: 0.5, lg: 0.6 } : { sm: 0.06, md: 0.1, lg: 0.16 };
+  const opacity =
+    scheme === 'dark' ? { sm: 0.4, md: 0.5, lg: 0.6 } : { sm: 0.05, md: 0.08, lg: 0.12 };
   const config = {
     sm: { radius: 6, offset: 2, elevation: 2 },
     md: { radius: 14, offset: 6, elevation: 6 },

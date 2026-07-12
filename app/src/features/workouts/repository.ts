@@ -6,7 +6,16 @@ import { newId } from '@/lib/id';
 import { getSyncManager } from '@/sync/manager';
 
 import { BASIC_FIT_EQUIPMENT, DEFAULT_GYMS } from './equipmentSeed';
-import type { Equipment, Exercise, ExerciseSet, Gym, Workout } from './types';
+import type {
+  Equipment,
+  EquipmentCategory,
+  Exercise,
+  ExerciseSet,
+  Gym,
+  GymType,
+  MuscleGroup,
+  Workout,
+} from './types';
 
 function rows(collection: string) {
   return db
@@ -69,6 +78,85 @@ export async function addEquipment(input: {
     user: input.userId,
     clientUpdatedAt: Date.now(),
     deleted: false,
+  });
+}
+
+export async function addGym(input: { name: string; gymType: GymType; userId: string }): Promise<string> {
+  const id = newId();
+  await getSyncManager().enqueue('gyms', 'upsert', {
+    id,
+    name: input.name,
+    gymType: input.gymType,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+  return id;
+}
+
+export async function updateGym(input: {
+  id: string;
+  name: string;
+  gymType: GymType;
+  userId: string;
+}): Promise<void> {
+  await getSyncManager().enqueue('gyms', 'upsert', {
+    id: input.id,
+    name: input.name,
+    gymType: input.gymType,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+}
+
+/** Soft-delete la salle et cascade sur tout son équipement (jamais de hard-delete). */
+export async function deleteGym(input: { id: string; userId: string }): Promise<void> {
+  const mgr = getSyncManager();
+  const now = Date.now();
+  const base = { user: input.userId, clientUpdatedAt: now, deleted: true };
+
+  await mgr.enqueue('gyms', 'upsert', { id: input.id, ...base });
+
+  for (const equipment of listEquipment(input.id)) {
+    await mgr.enqueue('equipment', 'upsert', {
+      id: equipment.id,
+      gym: equipment.gym,
+      name: equipment.name,
+      category: equipment.category,
+      muscleGroups: equipment.muscleGroups,
+      ...base,
+    });
+  }
+}
+
+export async function updateEquipment(input: {
+  id: string;
+  gymId: string;
+  name: string;
+  category: EquipmentCategory;
+  muscleGroups: MuscleGroup[];
+  userId: string;
+}): Promise<void> {
+  await getSyncManager().enqueue('equipment', 'upsert', {
+    id: input.id,
+    gym: input.gymId,
+    name: input.name,
+    category: input.category,
+    muscleGroups: input.muscleGroups,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: false,
+  });
+}
+
+/** Soft-delete un équipement (jamais de hard-delete). */
+export async function removeEquipment(input: { id: string; userId: string }): Promise<void> {
+  await getSyncManager().enqueue('equipment', 'upsert', {
+    id: input.id,
+    user: input.userId,
+    clientUpdatedAt: Date.now(),
+    deleted: true,
   });
 }
 
