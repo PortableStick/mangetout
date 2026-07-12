@@ -6,6 +6,9 @@ import { isAction, TOOLS, validateToolCall } from './tools.ts';
 
 const NOW = 1_700_000_000_000;
 const ctx = { userId: 'realUser', token: 'tok', fetchImpl: undefined as unknown as typeof fetch };
+// Ids au format newId() (app/src/lib/id.ts) : exactement 15 caractères [a-z0-9].
+const GYM_ID = 'gym123456789012';
+const EQ_ID = 'eq1234567890123';
 
 describe('coach tools', () => {
   it('classe lecture vs action', () => {
@@ -66,23 +69,37 @@ describe('outils salles/équipement', () => {
   });
 
   it('update_gym exige un id + au moins un champ', () => {
-    expect(validateToolCall('update_gym', { id: 'g1', name: 'New' }).ok).toBe(true);
-    expect(validateToolCall('update_gym', { id: 'g1' }).ok).toBe(false);
+    expect(validateToolCall('update_gym', { id: GYM_ID, name: 'New' }).ok).toBe(true);
+    expect(validateToolCall('update_gym', { id: GYM_ID }).ok).toBe(false);
   });
 
   it('delete_gym / remove_equipment exigent un id', () => {
-    expect(validateToolCall('delete_gym', { id: 'g1' }).ok).toBe(true);
+    expect(validateToolCall('delete_gym', { id: GYM_ID }).ok).toBe(true);
     expect(validateToolCall('delete_gym', {}).ok).toBe(false);
-    expect(validateToolCall('remove_equipment', { id: 'e1' }).ok).toBe(true);
+    expect(validateToolCall('remove_equipment', { id: EQ_ID }).ok).toBe(true);
   });
 
   it('add_equipment valide catégorie + gymId', () => {
     expect(
-      validateToolCall('add_equipment', { gymId: 'g1', name: 'Presse', category: 'machine', muscleGroups: ['legs'] }).ok
+      validateToolCall('add_equipment', { gymId: GYM_ID, name: 'Presse', category: 'machine', muscleGroups: ['legs'] }).ok
     ).toBe(true);
     expect(
-      validateToolCall('add_equipment', { gymId: 'g1', name: 'X', category: 'invalid', muscleGroups: [] }).ok
+      validateToolCall('add_equipment', { gymId: GYM_ID, name: 'X', category: 'invalid', muscleGroups: [] }).ok
     ).toBe(false);
+  });
+
+  it('rejette un id malformé (anti-injection de filtre PocketBase)', () => {
+    const injected = 'x" || user!=""';
+    expect(validateToolCall('delete_gym', { id: injected }).ok).toBe(false);
+    expect(validateToolCall('delete_gym', { id: 'abc' }).ok).toBe(false); // trop court
+    expect(validateToolCall('update_gym', { id: injected, name: 'New' }).ok).toBe(false);
+    expect(validateToolCall('remove_equipment', { id: injected }).ok).toBe(false);
+    expect(validateToolCall('remove_equipment', { id: 'abc' }).ok).toBe(false);
+    expect(
+      validateToolCall('add_equipment', { gymId: injected, name: 'X', category: 'machine', muscleGroups: [] }).ok
+    ).toBe(false);
+    // un id valide de 15 caractères [a-z0-9] reste accepté
+    expect(validateToolCall('delete_gym', { id: GYM_ID }).ok).toBe(true);
   });
 
   it('les nouveaux outils salles sont des actions avec op', () => {
@@ -115,7 +132,7 @@ describe('applyAction — salles/équipement (create/update/delete owner-scoped)
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq1' }) })) as unknown as typeof fetch;
     const res = await applyAction(
       'add_equipment',
-      { gymId: 'gym1', name: 'Presse', category: 'machine', muscleGroups: ['legs'] },
+      { gymId: GYM_ID, name: 'Presse', category: 'machine', muscleGroups: ['legs'] },
       { ...ctx, fetchImpl },
       NOW
     );
@@ -125,15 +142,15 @@ describe('applyAction — salles/équipement (create/update/delete owner-scoped)
     expect(calls[0]![1].method).toBe('POST');
     const body = JSON.parse(calls[0]![1].body);
     expect(body.user).toBe('realUser');
-    expect(body.gym).toBe('gym1');
+    expect(body.gym).toBe(GYM_ID);
   });
 
   it('update_gym : PATCH sans champ user, avec les champs fournis', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'gym1' }) })) as unknown as typeof fetch;
-    const res = await applyAction('update_gym', { id: 'gym1', name: 'Nouveau nom' }, { ...ctx, fetchImpl }, NOW);
-    expect(res).toEqual({ ok: true, id: 'gym1' });
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: GYM_ID }) })) as unknown as typeof fetch;
+    const res = await applyAction('update_gym', { id: GYM_ID, name: 'Nouveau nom' }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: GYM_ID });
     const calls = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls;
-    expect(calls[0]![0]).toContain('/collections/gyms/records/gym1');
+    expect(calls[0]![0]).toContain(`/collections/gyms/records/${GYM_ID}`);
     expect(calls[0]![1].method).toBe('PATCH');
     const body = JSON.parse(calls[0]![1].body);
     expect(body.user).toBeUndefined();
@@ -147,17 +164,17 @@ describe('applyAction — salles/équipement (create/update/delete owner-scoped)
       if (init?.method === 'GET' || init === undefined) {
         return { ok: true, status: 200, json: async () => ({ items: [{ id: 'eq1' }, { id: 'eq2' }] }) };
       }
-      return { ok: true, status: 200, json: async () => ({ id: 'gym1' }) };
+      return { ok: true, status: 200, json: async () => ({ id: GYM_ID }) };
     }) as unknown as typeof fetch;
-    const res = await applyAction('delete_gym', { id: 'gym1' }, { ...ctx, fetchImpl }, NOW);
-    expect(res).toEqual({ ok: true, id: 'gym1' });
+    const res = await applyAction('delete_gym', { id: GYM_ID }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: GYM_ID });
     // 1 GET (liste équipement) + 2 PATCH équipements + 1 PATCH salle
     expect(calls.length).toBe(4);
     expect(calls[0]![0]).toContain('/collections/equipment/records');
     const patchCalls = calls.slice(1);
     expect(patchCalls[0]![0]).toContain('/collections/equipment/records/eq1');
     expect(patchCalls[1]![0]).toContain('/collections/equipment/records/eq2');
-    expect(patchCalls[2]![0]).toContain('/collections/gyms/records/gym1');
+    expect(patchCalls[2]![0]).toContain(`/collections/gyms/records/${GYM_ID}`);
     for (const [, init] of patchCalls) {
       expect(init?.method).toBe('PATCH');
       const body = JSON.parse(init!.body as string);
@@ -167,11 +184,11 @@ describe('applyAction — salles/équipement (create/update/delete owner-scoped)
   });
 
   it('remove_equipment : PATCH deleted:true sans champ user', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq1' }) })) as unknown as typeof fetch;
-    const res = await applyAction('remove_equipment', { id: 'eq1' }, { ...ctx, fetchImpl }, NOW);
-    expect(res).toEqual({ ok: true, id: 'eq1' });
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: EQ_ID }) })) as unknown as typeof fetch;
+    const res = await applyAction('remove_equipment', { id: EQ_ID }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: EQ_ID });
     const call = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls[0]!;
-    expect(call[0]).toContain('/collections/equipment/records/eq1');
+    expect(call[0]).toContain(`/collections/equipment/records/${EQ_ID}`);
     expect(call[1].method).toBe('PATCH');
     const body = JSON.parse(call[1].body);
     expect(body.deleted).toBe(true);

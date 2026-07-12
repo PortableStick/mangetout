@@ -16,6 +16,8 @@ const macros = {
 const GYM_TYPE = z.enum(['chain', 'home']);
 const CATEGORY = z.enum(['machine', 'free_weight', 'cardio', 'functional']);
 const MUSCLES = z.array(z.string()).max(20);
+/** Id PocketBase généré par newId() (app/src/lib/id.ts) : exactement 15 caractères [a-z0-9]. */
+const PB_ID = z.string().regex(/^[a-z0-9]{15}$/);
 
 export interface ToolDef {
   kind: 'read' | 'action';
@@ -80,7 +82,7 @@ export const TOOLS: Record<string, ToolDef> = {
     description: 'Modifie une salle (nom et/ou type)',
     args: z
       .object({
-        id: z.string().min(1),
+        id: PB_ID,
         name: z.string().min(1).max(80).optional(),
         gymType: GYM_TYPE.optional(),
       })
@@ -91,7 +93,7 @@ export const TOOLS: Record<string, ToolDef> = {
     collection: 'gyms',
     op: 'delete',
     description: 'Supprime une salle (et son équipement)',
-    args: z.object({ id: z.string().min(1) }),
+    args: z.object({ id: PB_ID }),
   },
   add_equipment: {
     kind: 'action',
@@ -99,7 +101,7 @@ export const TOOLS: Record<string, ToolDef> = {
     op: 'create',
     description: 'Ajoute du matériel à une salle',
     args: z.object({
-      gymId: z.string().min(1),
+      gymId: PB_ID,
       name: z.string().min(1).max(80),
       category: CATEGORY,
       muscleGroups: MUSCLES,
@@ -110,7 +112,7 @@ export const TOOLS: Record<string, ToolDef> = {
     collection: 'equipment',
     op: 'delete',
     description: 'Retire du matériel',
-    args: z.object({ id: z.string().min(1) }),
+    args: z.object({ id: PB_ID }),
   },
 };
 
