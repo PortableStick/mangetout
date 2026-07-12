@@ -1,6 +1,7 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { Macros } from '@/features/food/types';
+import { getSyncManager } from '@/sync/manager';
 
 import { aiPost } from './client';
 
@@ -36,8 +37,14 @@ export function useCoach() {
 
 /** Applique une action coach CONFIRMÉE (owner-scoped côté serveur). */
 export function useApplyAction() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { tool: string; args: unknown }) =>
       aiPost<{ ok: boolean; id?: string; error?: string }>('coach/apply', input),
+    onSuccess: async () => {
+      // Rapatrie les changements serveur (PocketBase autoritaire) dans le cache local avant d'invalider.
+      await getSyncManager().syncAll().catch(() => undefined);
+      void qc.invalidateQueries();
+    },
   });
 }

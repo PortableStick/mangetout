@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -23,7 +22,6 @@ interface Bubble extends ChatTurn {
 
 export default function CoachScreen() {
   const theme = useTheme();
-  const qc = useQueryClient();
   const coach = useCoach();
   const apply = useApplyAction();
   const [input, setInput] = useState('');
@@ -76,8 +74,6 @@ export default function CoachScreen() {
               { role: 'assistant', content: res.ok ? '✓ C’est fait.' : `Échec : ${res.error ?? ''}` },
             ];
           });
-          // Rafraîchit les données potentiellement modifiées.
-          void qc.invalidateQueries();
         },
       }
     );
