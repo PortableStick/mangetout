@@ -6,18 +6,36 @@ import {
   addEquipment,
   addGym,
   createWorkout,
+  deleteExercise,
   deleteGym,
+  deleteSet,
+  deleteWorkout,
+  duplicateWorkout,
   listEquipment,
   listExercises,
   listGyms,
+  listSets,
   listWorkouts,
   removeEquipment,
   seedDefaultGyms,
   updateEquipment,
+  updateExercise,
   updateGym,
+  updateSet,
+  updateWorkout,
   type WorkoutDraft,
 } from './repository';
-import { MUSCLE_LABELS, type Equipment, type GymType, type MuscleGroup } from './types';
+import {
+  MUSCLE_LABELS,
+  type Equipment,
+  type Exercise,
+  type ExerciseSet,
+  type GymType,
+  type MuscleGroup,
+  type Workout,
+  type WorkoutSource,
+  type WorkoutStatus,
+} from './types';
 
 /** Filtre des libellés IA vers des groupes musculaires valides. */
 export function toMuscleGroups(raw: string[]): MuscleGroup[] {
@@ -145,6 +163,139 @@ export function useCreateWorkout() {
       createWorkout({ ...draft, userId: user?.id ?? '' }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['workouts'] });
+    },
+  });
+}
+
+/** Détail d'une séance : la séance + ses exercices, chacun avec ses séries. */
+export function useWorkoutDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ['workout', id],
+    queryFn: async (): Promise<{
+      workout: Workout | undefined;
+      exercises: (Exercise & { sets: ExerciseSet[] })[];
+    }> => {
+      const workout = listWorkouts().find((w) => w.id === id);
+      const exercises = listExercises(id ?? '').map((exercise) => ({
+        ...exercise,
+        sets: listSets(exercise.id),
+      }));
+      return { workout, exercises };
+    },
+    enabled: !!id,
+  });
+}
+
+export function useUpdateWorkout() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      at?: string;
+      gym?: string;
+      notes?: string;
+      status?: WorkoutStatus;
+      source?: WorkoutSource;
+    }) => updateWorkout({ ...input, userId: user?.id ?? '' }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.id] });
+    },
+  });
+}
+
+export function useDeleteWorkout() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: { id: string }) => deleteWorkout({ id: input.id, userId: user?.id ?? '' }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.id] });
+    },
+  });
+}
+
+export function useDuplicateWorkout() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: { id: string; at: string; status: WorkoutStatus }) =>
+      duplicateWorkout({ ...input, userId: user?.id ?? '' }),
+    onSuccess: (_newId, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.id] });
+    },
+  });
+}
+
+export function useUpdateExercise() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      workout: string;
+      name?: string;
+      equipment?: string;
+      position?: number;
+      source?: WorkoutSource;
+    }) => updateExercise({ ...input, userId: user?.id ?? '' }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.workout] });
+    },
+  });
+}
+
+export function useDeleteExercise() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: { id: string; workoutId: string }) =>
+      deleteExercise({ id: input.id, userId: user?.id ?? '' }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
+    },
+  });
+}
+
+export function useUpdateSet() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      exercise: string;
+      fields: Record<string, number | string>;
+      position?: number;
+      workoutId: string;
+    }) =>
+      updateSet({
+        id: input.id,
+        exercise: input.exercise,
+        fields: input.fields,
+        position: input.position,
+        userId: user?.id ?? '',
+      }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
+    },
+  });
+}
+
+export function useDeleteSet() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (input: { id: string; workoutId: string }) =>
+      deleteSet({ id: input.id, userId: user?.id ?? '' }),
+    onSuccess: (_res, vars) => {
+      void qc.invalidateQueries({ queryKey: ['workouts'] });
+      void qc.invalidateQueries({ queryKey: ['workout', vars.workoutId] });
     },
   });
 }
