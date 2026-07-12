@@ -93,6 +93,107 @@ describe('outils salles/équipement', () => {
   });
 });
 
+describe('applyAction — salles/équipement (create/update/delete owner-scoped)', () => {
+  it('add_gym : POST create, body.user forcé (ignore un user injecté par le modèle)', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'gym1' }) })) as unknown as typeof fetch;
+    const res = await applyAction(
+      'add_gym',
+      { name: 'Basic-Fit', gymType: 'chain', user: 'HACKER' },
+      { ...ctx, fetchImpl },
+      NOW
+    );
+    expect(res).toEqual({ ok: true, id: 'gym1' });
+    const calls = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls;
+    expect(calls[0]![0]).toContain('/collections/gyms/records');
+    expect(calls[0]![1].method).toBe('POST');
+    const body = JSON.parse(calls[0]![1].body);
+    expect(body.user).toBe('realUser');
+    expect(body.name).toBe('Basic-Fit');
+  });
+
+  it('add_equipment : POST create vers equipment, body.gym = gymId', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq1' }) })) as unknown as typeof fetch;
+    const res = await applyAction(
+      'add_equipment',
+      { gymId: 'gym1', name: 'Presse', category: 'machine', muscleGroups: ['legs'] },
+      { ...ctx, fetchImpl },
+      NOW
+    );
+    expect(res).toEqual({ ok: true, id: 'eq1' });
+    const calls = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls;
+    expect(calls[0]![0]).toContain('/collections/equipment/records');
+    expect(calls[0]![1].method).toBe('POST');
+    const body = JSON.parse(calls[0]![1].body);
+    expect(body.user).toBe('realUser');
+    expect(body.gym).toBe('gym1');
+  });
+
+  it('update_gym : PATCH sans champ user, avec les champs fournis', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'gym1' }) })) as unknown as typeof fetch;
+    const res = await applyAction('update_gym', { id: 'gym1', name: 'Nouveau nom' }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: 'gym1' });
+    const calls = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls;
+    expect(calls[0]![0]).toContain('/collections/gyms/records/gym1');
+    expect(calls[0]![1].method).toBe('PATCH');
+    const body = JSON.parse(calls[0]![1].body);
+    expect(body.user).toBeUndefined();
+    expect(body.name).toBe('Nouveau nom');
+  });
+
+  it('delete_gym : liste l’équipement de la salle puis soft-delete équipements + salle', async () => {
+    const calls: [string, RequestInit | undefined][] = [];
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push([url, init]);
+      if (init?.method === 'GET' || init === undefined) {
+        return { ok: true, status: 200, json: async () => ({ items: [{ id: 'eq1' }, { id: 'eq2' }] }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ id: 'gym1' }) };
+    }) as unknown as typeof fetch;
+    const res = await applyAction('delete_gym', { id: 'gym1' }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: 'gym1' });
+    // 1 GET (liste équipement) + 2 PATCH équipements + 1 PATCH salle
+    expect(calls.length).toBe(4);
+    expect(calls[0]![0]).toContain('/collections/equipment/records');
+    const patchCalls = calls.slice(1);
+    expect(patchCalls[0]![0]).toContain('/collections/equipment/records/eq1');
+    expect(patchCalls[1]![0]).toContain('/collections/equipment/records/eq2');
+    expect(patchCalls[2]![0]).toContain('/collections/gyms/records/gym1');
+    for (const [, init] of patchCalls) {
+      expect(init?.method).toBe('PATCH');
+      const body = JSON.parse(init!.body as string);
+      expect(body.deleted).toBe(true);
+      expect(body.user).toBeUndefined();
+    }
+  });
+
+  it('remove_equipment : PATCH deleted:true sans champ user', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'eq1' }) })) as unknown as typeof fetch;
+    const res = await applyAction('remove_equipment', { id: 'eq1' }, { ...ctx, fetchImpl }, NOW);
+    expect(res).toEqual({ ok: true, id: 'eq1' });
+    const call = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls[0]!;
+    expect(call[0]).toContain('/collections/equipment/records/eq1');
+    expect(call[1].method).toBe('PATCH');
+    const body = JSON.parse(call[1].body);
+    expect(body.deleted).toBe(true);
+    expect(body.user).toBeUndefined();
+  });
+
+  it('add_food_entry reste en POST create, non régressé', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 'fe1' }) })) as unknown as typeof fetch;
+    const res = await applyAction(
+      'add_food_entry',
+      { name: 'Pomme', quantity_g: 100, mealType: 'lunch', kcal: 52, protein_g: 0, carbs_g: 14, fat_g: 0 },
+      { ...ctx, fetchImpl },
+      NOW
+    );
+    expect(res).toEqual({ ok: true, id: 'fe1' });
+    const call = (fetchImpl as unknown as { mock: { calls: [string, { method: string; body: string }][] } }).mock.calls[0]!;
+    expect(call[1].method).toBe('POST');
+    const body = JSON.parse(call[1].body);
+    expect(body.user).toBe('realUser');
+  });
+});
+
 describe('runCoach', () => {
   const chat = (message: object) =>
     vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ choices: [{ message }] }) })) as unknown as typeof fetch;
