@@ -99,6 +99,7 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
 
+      <Button label="Mes salles" variant="ghost" onPress={() => router.push('/gyms')} />
       <Button label="À propos (licences, IA)" variant="ghost" onPress={() => router.push('/about')} />
       <Button label="Se déconnecter" variant="secondary" onPress={signOut} />
     </Screen>

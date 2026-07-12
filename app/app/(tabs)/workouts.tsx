@@ -84,6 +84,8 @@ export default function WorkoutsScreen() {
           </Card>
         ))
       )}
+
+      <Button label="Gérer les salles" variant="ghost" onPress={() => router.push('/gyms')} />
     </Screen>
   );
 }
