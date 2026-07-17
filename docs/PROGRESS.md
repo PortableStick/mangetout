@@ -1,11 +1,12 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/seances-v2` (M16→M20), M16→M19 + player prêts à merger (gate --merge vert, revue finale Opus « PRÊT À MERGER » après fix cardio).
-- Dernier milestone terminé : **19 — Feedback scientifique** ; **M20 partiel** (logique pure du player). Le reste de M20 (POC 3D + audio) attend un build device.
-- Précédemment mergés : M12 salles CRUD, M13 salles IA, M14 markdown coach, M15 thème+refonte.
-- Prochain : merge M16→M19+player, puis POC 3D sur device ; déploiement homelab (voir « À FAIRE humain »).
-- Total tests : **app 174 · serveur 46** (tsc + lint verts ; gate.mjs --merge vert).
+- Branche active : `feat/exos-v3` (M21 — coach visuel utilisable sans device).
+- Dernier chantier terminé : **M21 exos v3** — bibliothèque d'exercices (47 fiches), moteur 3D FK pur + poses keyframées (21), **visualiseur de pose en SVG 2D animé** (pas besoin des deps natives 3D), écran de détail `/exercise/[slug]` (pose + muscles + déroulé + conseils + erreurs), nom d'exercice cliquable depuis le détail de séance.
+- Décision clé : le POC 3D natif (expo-gl/three) de M20 reste différé ; la technique est rendue par **projection orthographique 3D→2D + react-native-svg** (déjà une dep), donc testable en Node et utilisable en Expo Go.
+- Précédemment mergés : M12→M15 (salles/IA/markdown/thème), M16→M20 partiel (séances v2 : détail/statuts/duplication, métriques flexibles, feedback scientifique, player).
+- Prochain : merge `feat/exos-v3`, puis POC 3D natif optionnel sur device ; déploiement homelab (voir « À FAIRE humain »).
+- Total tests : **app 212 · serveur 46** (tsc + lint verts ; gate.mjs --merge vert).
 
 ## Fait
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
@@ -46,6 +47,7 @@
 - [x] M18 métriques flexibles : catalogue de champs fermé + presets (`metrics.ts` — strength/bodyweight/assisted/isometric/cardio_row/bike/run/generic), `metricSet` sur équipement + seed cardio, **séries typées** (`fields`), garde-fou `sanity.ts` rétabli (setSchema, optionnalité par preset — cardio partiel valide), outils coach `metricSet` + `update_equipment`.
 - [x] M19 feedback scientifique : `coaching.ts` heuristiques **sourcées** (ACSM volume, ISSN protéines, NIH calories, tendance poids) — **jamais de prédiction** ; cartes dashboard + mode objectif (sur `goals`).
 - [~] M20 coach visuel : logique pure du player (`player.ts`) faite ; **POC 3D + audio (expo-gl/three/expo-av/expo-speech) à faire sur device** (les deps ne sont pas encore installées).
+- [x] M21 exos v3 : bibliothèque `exerciseLibrary.ts` (47 fiches — technique/muscles/poseId, résolution par nom libre insensible aux accents), moteur `pose3d/skeleton.ts` (cinématique directe pure, algèbre maison, recalage au sol), `pose3d/poses.ts` (21 poses keyframées départ→fin), `pose3d/project.ts` (projection orthographique 3D→2D stable), `PoseViewer.tsx` (stick figure SVG animé pingPong, pause/lecture — **sans dépendance native 3D**), écran `/exercise/[slug]` (pose animée + muscles + déroulé + conseils + erreurs), nom d'exercice cliquable dans le détail de séance. **+38 tests** (algèbre/FK, intégrité poses/bibliothèque, projection).
 
 ## Milestones (0→11)
 - [x] 0 Setup + PocketBase compose
@@ -75,6 +77,7 @@
 - [ ] 11 Dashboard + polish
 
 ## Décisions
+- 2026-07-17 : chantier **M21 exos v3** (coordination Opus, revues Sonnet 5). Le POC 3D natif de M20 (`@react-three/native`, instable en amont, deps non installées) est **contourné** : la technique est modélisée par un squelette FK **pur** (aucune dépendance, testable en Node) puis rendue par **projection orthographique 3D→2D + react-native-svg** (déjà présent). Bénéfice : fiche technique animée utilisable **en Expo Go, sans build device**, et toute la logique (algèbre, FK, poses, projection) est testée (+38 tests). Intégrité garantie par tests : tout `poseId` de la bibliothèque existe, muscles/presets valides, chaque keyframe passe la FK sans NaN et pose au sol. Fix au passage : `mulMat` réécrit par déstructuration (typecheck `noUncheckedIndexedAccess`). Dette différée : POC 3D natif reste possible plus tard (les modules purs sont réutilisables tels quels) ; carte anatomique (silhouette muscles surlignés) non faite — muscles rendus en badges.
 - 2026-07-12 : chantier **M16→M20** (séances v2). Recherche web sourcée (métriques Garmin/Strava/Concept2 ; science ACSM/ISSN/NIH ; 3D). **Modèle de métriques** : catalogue de champs FERMÉ + presets, optionnalité **par preset** (cardio partiel valide). **Feedback = heuristiques sourcées, jamais de prédiction individuelle** (sur-promesse écartée). **Revue finale** : bug Important attrapé (séries cardio/vides droppées silencieusement au push car sanity trop stricte) → corrigé (optionnalité par preset + `SetInput` n'écrit plus `0` sur champ vidé). **3D** : POC-first obligatoire (stack `@react-three/native` instable en amont) ; deps 3D/audio autorisées pour M20 seulement, à installer/valider sur device. Dette différée : validation écran + dead-letter si une série échoue quand même la sanité ; câblage `weightTrend` au dashboard ; dedup constantes de statut. Spec `docs/superpowers/specs/2026-07-12-seances-*-design.md`, plan `docs/superpowers/plans/2026-07-12-seances-v2.md`.
 - 2026-07-12 : chantier **M12→M15** (salles CRUD + salles IA + markdown coach + thème/refonte) mené en **subagent-driven** (Opus orchestre, agents Sonnet implémentent milestone par milestone, revue par tâche + revue finale Opus). Spec `docs/superpowers/specs/2026-07-12-*-design.md`, plan `docs/superpowers/plans/2026-07-12-*.md`. **Revue sécurité M13** : validation stricte du format d'`id` d'outil (`^[a-z0-9]{15}$`) fermant une injection de filtre PocketBase sur la cascade `delete_gym` (owner-scoping intact, pas d'escalade inter-user). **Revue finale** : bouton danger rebasculé sur la variante `danger` (contraste AA en dark). Dettes suivies (LOW) : cascade delete_gym IA silencieuse si listing échoue ; libellés a11y partiels ; `proposalSummary` salles générique.
 - 2026-07-07 : monorepo `app/` + `server/` + `infra/` (sépare bundle app / secrets serveur / infra). Proxy IA = sidecar Node dédié (testable, isole la clé) plutôt que hook Go PocketBase.

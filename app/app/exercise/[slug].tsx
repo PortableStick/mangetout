@@ -93,27 +93,36 @@ export default function ExerciseDetailScreen() {
         ))}
       </Card>
 
-      <Card>
-        <Text variant="headline">Conseils</Text>
-        {info.tips.map((tip, i) => (
-          <View key={i} style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-            <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1 }}>{tip}</Text>
-          </View>
-        ))}
-      </Card>
-
-      <Card>
-        <Text variant="headline">Erreurs à éviter</Text>
-        {info.mistakes.map((mistake, i) => (
-          <View key={i} style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-            <Ionicons name="close-circle" size={18} color={theme.colors.danger} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1 }}>{mistake}</Text>
-          </View>
-        ))}
-      </Card>
+      <IconList title="Conseils" items={info.tips} icon="checkmark-circle" color={theme.colors.success} />
+      <IconList title="Erreurs à éviter" items={info.mistakes} icon="close-circle" color={theme.colors.danger} />
 
       <Button label="Retour" variant="secondary" onPress={() => router.back()} />
     </Screen>
+  );
+}
+
+/** Liste de puces à icône (conseils, erreurs…). */
+function IconList({
+  title,
+  items,
+  icon,
+  color,
+}: {
+  title: string;
+  items: string[];
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  color: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Card>
+      <Text variant="headline">{title}</Text>
+      {items.map((item, i) => (
+        <View key={i} style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          <Ionicons name={icon} size={18} color={color} style={{ marginTop: 2 }} />
+          <Text style={{ flex: 1 }}>{item}</Text>
+        </View>
+      ))}
+    </Card>
   );
 }

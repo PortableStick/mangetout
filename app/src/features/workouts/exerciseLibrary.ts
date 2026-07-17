@@ -33,7 +33,7 @@ export interface ExerciseInfo {
 export function normalizeExerciseName(raw: string): string {
   return raw
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[̀-ͯ]/g, '') // diacritiques combinants (accents)
     .toLowerCase()
     .replace(/\([^)]*\)/g, ' ')
     .replace(/[^a-z0-9]+/g, ' ')
