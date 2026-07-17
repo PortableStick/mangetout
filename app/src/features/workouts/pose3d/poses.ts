@@ -440,6 +440,83 @@ export const POSES: Record<string, ExercisePose> = {
       },
     },
   },
+  'leg-extension': {
+    label: 'Tendre les jambes à l’horizontale, sans à-coup',
+    cameraYaw: 75,
+    durationMs: 1400,
+    start: {
+      bones: {
+        thighL: [-90, 0, -4],
+        thighR: [-90, 0, 4],
+        shinL: [92, 0, 0],
+        shinR: [92, 0, 0],
+        upperArmL: [-15, 0, -6],
+        upperArmR: [-15, 0, 6],
+        forearmL: [-30, 0, 0],
+        forearmR: [-30, 0, 0],
+      },
+    },
+    end: {
+      bones: {
+        thighL: [-90, 0, -4],
+        thighR: [-90, 0, 4],
+        shinL: [2, 0, 0],
+        shinR: [2, 0, 0],
+        upperArmL: [-15, 0, -6],
+        upperArmR: [-15, 0, 6],
+        forearmL: [-30, 0, 0],
+        forearmR: [-30, 0, 0],
+      },
+    },
+  },
+  'leg-curl': {
+    label: 'Amener les talons vers les fessiers, hanches plaquées',
+    cameraYaw: 75,
+    durationMs: 1400,
+    start: {
+      bones: {
+        thighL: [-90, 0, -4],
+        thighR: [-90, 0, 4],
+        shinL: [4, 0, 0],
+        shinR: [4, 0, 0],
+        upperArmL: [-15, 0, -6],
+        upperArmR: [-15, 0, 6],
+        forearmL: [-30, 0, 0],
+        forearmR: [-30, 0, 0],
+      },
+    },
+    end: {
+      bones: {
+        thighL: [-90, 0, -4],
+        thighR: [-90, 0, 4],
+        shinL: [96, 0, 0],
+        shinR: [96, 0, 0],
+        upperArmL: [-15, 0, -6],
+        upperArmR: [-15, 0, 6],
+        forearmL: [-30, 0, 0],
+        forearmR: [-30, 0, 0],
+      },
+    },
+  },
+  'triceps-pushdown': {
+    label: 'Coudes collés au buste, tendre les bras vers le bas',
+    cameraYaw: 45,
+    durationMs: 1300,
+    start: {
+      bones: {
+        spine: [6, 0, 0],
+        forearmL: [-98, 0, 0],
+        forearmR: [-98, 0, 0],
+      },
+    },
+    end: {
+      bones: {
+        spine: [6, 0, 0],
+        forearmL: [-6, 0, 0],
+        forearmR: [-6, 0, 0],
+      },
+    },
+  },
   rowing: {
     label: 'Jambes → buste → bras, puis retour inverse',
     cameraYaw: 80,

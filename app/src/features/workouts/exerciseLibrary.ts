@@ -133,6 +133,7 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     ],
     tips: ['Régler le dossier pour que le genou soit exactement dans l’axe de rotation.'],
     mistakes: ['Donner un à-coup avec le bassin pour monter la charge.'],
+    poseId: 'leg-extension',
   },
   {
     slug: 'leg-curl',
@@ -149,6 +150,7 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     ],
     tips: ['Garder les hanches plaquées : le mouvement vient des genoux, pas du bassin.'],
     mistakes: ['Cambrer pour tricher sur la fin de flexion.'],
+    poseId: 'leg-curl',
   },
   {
     slug: 'fentes',
@@ -477,6 +479,7 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     ],
     tips: ['Buste légèrement incliné, gainage constant.'],
     mistakes: ['Écarter les coudes du buste et pousser avec les épaules.'],
+    poseId: 'triceps-pushdown',
   },
   {
     slug: 'dips',
