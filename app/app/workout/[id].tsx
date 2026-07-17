@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
@@ -10,6 +11,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
+import { findExerciseInfo } from '@/features/workouts/exerciseLibrary';
 import { fieldsFor } from '@/features/workouts/metrics';
 import { SetInput } from '@/features/workouts/SetInput';
 import type { Exercise, ExerciseSet, WorkoutSource, WorkoutStatus } from '@/features/workouts/types';
@@ -155,7 +157,9 @@ function ExerciseCard({
   workoutId: string;
 }) {
   const theme = useTheme();
+  const router = useRouter();
   const deleteExercise = useDeleteExercise();
+  const info = findExerciseInfo(exercise.name);
 
   const confirmDeleteExercise = () => {
     Alert.alert('Supprimer l’exercice', `« ${exercise.name} » et ses séries seront supprimés.`, [
@@ -171,9 +175,23 @@ function ExerciseCard({
   return (
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-        <Text variant="headline" style={{ flex: 1 }}>
-          {exercise.name}
-        </Text>
+        {info ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/exercise/[slug]', params: { slug: info.slug } })}
+            accessibilityRole="button"
+            accessibilityLabel={`Voir la fiche technique de ${exercise.name}`}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}
+          >
+            <Text variant="headline" style={{ flex: 1 }}>
+              {exercise.name}
+            </Text>
+            <Ionicons name="information-circle-outline" size={20} color={theme.colors.accent} />
+          </Pressable>
+        ) : (
+          <Text variant="headline" style={{ flex: 1 }}>
+            {exercise.name}
+          </Text>
+        )}
         <IconButton
           name="trash-outline"
           tone="danger"
