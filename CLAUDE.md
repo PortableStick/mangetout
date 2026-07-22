@@ -36,7 +36,7 @@ mangetout/
 
 ## Conventions
 - **Unités** : métriques (kg, cm, kcal, g). **Langue** : FR par défaut. **Dark mode** natif complet.
-- **UI** : style Apple/iOS — espace blanc, hiérarchie typo nette, coins arrondis généreux, ombres légères, 1 couleur d'accent, contrastes AA. Police propre embarquée (pas Roboto brut). Charger le skill design avant tout écran.
+- **UI** : design system **volt/ink/bone** (dark-only) depuis la refonte M21→M24. Fonds `ink` quasi-noirs, texte `bone` (os), **accent unique `volt` `#CDFB49`** ; signaux warn/fail/rest. Look plat : **hairline borders, zéro ombre portée** (glow volt seul). Typo : **Anton** (titres, MAJUSCULES), **Archivo** (corps), **IBM Plex Mono** (labels/unités/données, uppercase, tabular). Radii serrés (0/4/8/12), contrastes AA. Source unique : `app/src/theme/tokens.ts` + kit `app/src/components/ui/`. Handoff de référence : `Mangetout Design System-handoff.zip` (gitignoré). *(Ancienne direction « Apple/iOS clair » abandonnée.)*
 - **Commits** : Conventional Commits, messages FR impératifs concis. Petits & fréquents.
 - **Branches** : une par milestone (`chore/setup`, `feat/auth-oidc`, `feat/data-layer`, `feat/food-barcode`, `feat/manual-entry`, `feat/weight`, `feat/workouts-gyms`, `feat/health-sync`, `feat/ai-text`, `feat/ai-vision`, `feat/ai-coach`, `feat/dashboard`, `chore/polish`). Merge sur `main` seulement si **vert**.
 - **Nommage fichiers** : composants `PascalCase.tsx`, hooks `useXxx.ts`, modules `kebab` ou `camel` cohérents par dossier.
