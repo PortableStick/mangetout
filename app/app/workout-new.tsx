@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
@@ -146,9 +147,9 @@ export default function WorkoutNewScreen() {
 
   return (
     <Screen>
-      <Text variant="largeTitle">Nouvelle séance</Text>
+      <ScreenHeader eyebrow="Nouvelle" title="Séance" />
 
-      <Text variant="footnote" color="textTertiary">
+      <Text variant="label" color="textTertiary">
         Salle
       </Text>
       <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
@@ -181,12 +182,12 @@ export default function WorkoutNewScreen() {
         </Text>
       ) : null}
 
-      <Text variant="footnote" color="textTertiary">
+      <Text variant="label" color="textTertiary">
         Statut
       </Text>
       <SegmentedControl options={STATUS_OPTIONS} value={status} onChange={setStatus} />
 
-      <Text variant="footnote" color="textTertiary">
+      <Text variant="label" color="textTertiary">
         Groupes ciblés (optionnel)
       </Text>
       <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>

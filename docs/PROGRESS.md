@@ -1,13 +1,15 @@
 # PROGRESS — mangetout
 
 ## État courant
-- Branche active : `feat/seances-v2` (M16→M20), M16→M19 + player prêts à merger (gate --merge vert, revue finale Opus « PRÊT À MERGER » après fix cardio).
-- Dernier milestone terminé : **19 — Feedback scientifique** ; **M20 partiel** (logique pure du player). Le reste de M20 (POC 3D + audio) attend un build device.
-- Précédemment mergés : M12 salles CRUD, M13 salles IA, M14 markdown coach, M15 thème+refonte.
-- Prochain : merge M16→M19+player, puis POC 3D sur device ; déploiement homelab (voir « À FAIRE humain »).
-- Total tests : **app 174 · serveur 46** (tsc + lint verts ; gate.mjs --merge vert).
+- Branche active : `feat/refonte-ui-ux` (**M21→M24 — refonte UI/UX design system volt/ink/bone**), prête à merger (gate --merge vert ; revues sécu/propreté/perf passées + findings corrigés ; **validée écran par écran sur émulateur Android**).
+- Dernier milestone terminé : **24 — coach 3D** (`CoachRig` porté three/expo-gl, rend sur émulateur). Refonte complète : thème+polices, Today/Session/Coach/Moves fidèles au handoff, cohérence des écrans secondaires.
+- Précédemment mergés : M12→M15 (salles/markdown/thème), M16→M20 (séances v2, player).
+- Prochain : merge refonte sur `main` ; câbler `/session` aux vraies données (dette) ; perfs 3D à confirmer sur device réel ; déploiement homelab (voir « À FAIRE humain »).
+- Total tests : **app 193 · serveur 46** (tsc + lint verts ; gate.mjs --merge vert).
+- **Outillage dev** : boucle de validation visuelle opérationnelle sur PC (émulateur Android + `expo run:android` + `adb screencap` lu par l'agent). JDK 17 + Android SDK requis (voir « À FAIRE humain »).
 
 ## Fait
+- [x] **Refonte UI/UX (M21→M24)** — design system **volt/ink/bone** (handoff `Mangetout Design System-handoff.zip`, traduit JSX web → RN). M21 fondation : `tokens.ts` (ink/bone/volt/signal, radii serrés), polices **Anton/Archivo/IBM Plex Mono** (`@expo-google-fonts`), `ThemeProvider` **dark-only**, `Text` (variants display/label/mono/tabular, accents Anton via leading 1.05). M22 kit : `StatCard`, `SetRow`, `ScreenHeader`, `Button` étendu (size/icon/fullWidth). M23 écrans **fidèles au handoff** : Today (`(tabs)/index`), Session (`/session`, hero mega + SetRow), Coach (`(tabs)/coach`, hero + chat, logique IA gardée), Moves (`/moves`, nouveau) + cohérence des écrans secondaires (ScreenHeader). M24 **coach 3D** : `src/features/coach3d/CoachRig.tsx` — athlète + machines low-poly procéduraux (three/expo-gl, liseré volt, chorégraphies par tempo), `CoachCore` (chat) + `MovementDemo` (Moves), hook `useGlScene` (RAF suspendu hors focus/arrière-plan). Deps : `expo-gl`, `three@0.162` (r163+ exige WebGL2 indispo RN), `@types/three`. **app 193 tests · gate --merge vert · validé à l'écran.** Dette suivie : `/session` sur données représentatives (à câbler `useWorkoutDetail`) ; scène 3D remontée au changement d'exercice/tempo ; `three` non lazy-load ; warning dev « open debugger ».
 - [x] Cadrage : `.gitignore`, `.env.example`, `CLAUDE.md`, `docs/PROGRESS.md`, sous-agents, hooks (validés : destructif bloqué, secret-scan attrape une clé plantée, gate vert)
 - [x] M0 app (`app/`) : Expo 57.0.4, expo-router (tabs Accueil/Journal/Séances/Coach/Réglages), thème Apple (tokens light/dark, Inter embarquée, Text/Screen/Card/ProgressBar), TanStack Query, drizzle+expo-sqlite installés, dashboard squelette. **tsc ✓ · eslint ✓ · jest ✓ · expo-doctor 20/20 ✓**
 - [x] M0 infra (`infra/`) : Dockerfile PocketBase 0.39.5 (binaire officiel, multi-arch), docker-compose (PocketBase + ai-proxy derrière Traefik, en-têtes sécurité), `restic-backup.sh` (copie à froid pb_data + rétention + check), README déploiement.

@@ -28,7 +28,9 @@ export interface Theme {
 const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const system = useColorScheme();
+  // Appelé pour rester monté dans l'arbre React (cohérence de hooks) mais son résultat ne pilote
+  // plus `scheme` (app dark-only, voir plus bas).
+  useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('system');
 
   useEffect(() => {
@@ -41,7 +43,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const scheme: ColorScheme = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
+  // App dark-only (identité design system) — mode conservé pour compat, sans effet sur le rendu.
+  // `system` (useColorScheme) n'est plus lu pour dériver `scheme` : le schéma effectif est toujours 'dark'.
+  const scheme: ColorScheme = 'dark';
 
   const setMode = (m: ThemeMode) => {
     setModeState(m);

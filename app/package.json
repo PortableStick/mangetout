@@ -13,7 +13,9 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/anton": "^0.4.2",
+    "@expo-google-fonts/archivo": "^0.4.2",
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",
     "@tanstack/react-query": "^5.101.2",
     "babel-preset-expo": "~57.0.0",
@@ -23,6 +25,7 @@
     "expo-camera": "~57.0.1",
     "expo-constants": "~57.0.3",
     "expo-font": "~57.0.0",
+    "expo-gl": "~57.0.1",
     "expo-image-picker": "~57.0.2",
     "expo-linking": "~57.0.2",
     "expo-router": "~57.0.4",
@@ -40,6 +43,7 @@
     "react-native-screens": "4.25.2",
     "react-native-sse": "^1.2.1",
     "react-native-svg": "15.15.4",
+    "three": "0.162.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -47,6 +51,7 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
+    "@types/three": "0.162.0",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",

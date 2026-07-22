@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Text } from '@/components/ui/Text';
 import { env } from '@/config/env';
@@ -37,7 +38,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <Text variant="largeTitle">Réglages</Text>
+      <ScreenHeader eyebrow="Compte" title="Réglages" />
 
       <Card>
         <Text variant="headline">Compte</Text>
@@ -100,18 +101,12 @@ export default function SettingsScreen() {
 
       <Card>
         <Text variant="headline">Apparence</Text>
-        <Text variant="footnote" color="textTertiary">
-          Choisis l’apparence de l’app.
+        <Text variant="body" style={{ marginTop: theme.spacing.xs }}>
+          Sombre (uniquement)
         </Text>
-        <SegmentedControl
-          options={[
-            { label: 'Système', value: 'system' },
-            { label: 'Clair', value: 'light' },
-            { label: 'Sombre', value: 'dark' },
-          ]}
-          value={theme.mode}
-          onChange={theme.setMode}
-        />
+        <Text variant="footnote" color="textTertiary">
+          L’app utilise un thème sombre unique — pas de mode clair ni système.
+        </Text>
       </Card>
 
       <Card>

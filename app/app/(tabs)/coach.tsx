@@ -1,9 +1,11 @@
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { IconButton } from '@/components/ui/IconButton';
 import { Markdown } from '@/components/ui/Markdown';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -15,7 +17,9 @@ import {
   type ChatTurn,
   type CoachResult,
 } from '@/features/ai/useAi';
+import { CoachCore } from '@/features/coach3d/CoachRig';
 import { useTheme } from '@/theme/ThemeProvider';
+import { withAlpha } from '@/theme/tokens';
 
 interface Bubble extends ChatTurn {
   proposal?: { tool: string; args: unknown; summary: string };
@@ -23,6 +27,7 @@ interface Bubble extends ChatTurn {
 
 export default function CoachScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const coach = useCoach();
   const apply = useApplyAction();
   const [input, setInput] = useState('');
@@ -89,26 +94,82 @@ export default function CoachScreen() {
     );
   }
 
+  const canSend = input.trim().length > 0 && !coach.isPending;
+
   return (
     <Screen scroll={false} padded={false}>
       <KeyboardAvoidingView
-        style={{ flex: 1, gap: theme.spacing.md }}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
+        {/* Hero — bandeau du coach. Rig 3D procédural (M24) : idle en `brief`, accéléré/teinté warn en `thinking`. */}
+        <View
+          style={{
+            height: 200,
+            position: 'relative',
+            overflow: 'hidden',
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.separator,
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '70%',
+              backgroundColor: theme.colors.accentMuted,
+            }}
+          />
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <CoachCore state={coach.isPending ? 'thinking' : 'brief'} height={200} />
+          </View>
+          <View
+            style={{
+              position: 'absolute',
+              left: theme.spacing.lg,
+              bottom: theme.spacing.md,
+            }}
+          >
+            <Text variant="label" color="accent">
+              {coach.isPending ? 'Analyse…' : 'Coach · en ligne'}
+            </Text>
+            <Text variant="display" style={{ marginTop: theme.spacing.xs }}>
+              Brief de séance
+            </Text>
+          </View>
+          <View
+            style={{
+              position: 'absolute',
+              right: theme.spacing.lg,
+              bottom: theme.spacing.md,
+            }}
+          >
+            <IconButton
+              name="barbell-outline"
+              tone="neutral"
+              accessibilityLabel="Bibliothèque de gestes"
+              onPress={() => router.push('/moves')}
+            />
+          </View>
+        </View>
+
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: theme.spacing.xl,
-            gap: theme.spacing.lg,
+            paddingVertical: theme.spacing.lg,
+            gap: theme.spacing.md,
             flexGrow: 1,
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToEnd}
         >
-          <Text variant="largeTitle">Coach</Text>
           {bubbles.length === 0 ? (
             <Card>
               <Text variant="headline">Pose-moi une question</Text>
@@ -120,11 +181,17 @@ export default function CoachScreen() {
           ) : (
             bubbles.map((b, i) => (
               <View key={i} style={{ alignItems: b.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <Card
-                  elevation={b.role === 'user' ? 'none' : 'sm'}
+                <View
                   style={{
+                    maxWidth: '85%',
                     backgroundColor: b.role === 'user' ? theme.colors.accentMuted : theme.colors.surface,
-                    maxWidth: '90%',
+                    borderWidth: 1,
+                    borderColor:
+                      b.role === 'user' ? withAlpha(theme.colors.accent, 0.25) : theme.colors.separator,
+                    borderRadius: theme.radius.md,
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    gap: theme.spacing.sm,
                   }}
                 >
                   {b.role === 'assistant' ? (
@@ -144,7 +211,7 @@ export default function CoachScreen() {
                       />
                     </View>
                   ) : null}
-                </Card>
+                </View>
               </View>
             ))
           )}
@@ -156,12 +223,28 @@ export default function CoachScreen() {
             gap: theme.spacing.sm,
             alignItems: 'flex-end',
             paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
+            paddingBottom: theme.spacing.lg,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.separator,
           }}
         >
           <View style={{ flex: 1 }}>
-            <Field value={input} onChangeText={setInput} placeholder="Écris au coach…" multiline />
+            <Field
+              value={input}
+              onChangeText={setInput}
+              placeholder="Pose ta question au coach"
+              multiline
+              style={{
+                backgroundColor: theme.colors.surfaceRaised,
+                borderColor: theme.colors.borderStrong,
+                borderRadius: theme.radius.sm,
+              }}
+            />
           </View>
-          <Button label="Envoyer" loading={coach.isPending} disabled={!input.trim()} onPress={send} />
+          <View style={{ opacity: canSend ? 1 : 0.5 }} pointerEvents={canSend ? 'auto' : 'none'}>
+            <IconButton name="send" tone="accent" accessibilityLabel="Envoyer" onPress={send} />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Screen>

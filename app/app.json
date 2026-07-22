@@ -10,10 +10,8 @@
     "android": {
       "package": "com.mangetout.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B0C",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#0B0C0A",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
